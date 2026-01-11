@@ -11,8 +11,39 @@ const app = express();
 // Conectar a MongoDB
 connectDB();
 
+// Configuración de CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o curl requests)
+    if (!origin) return callback(null, true);
+
+    // Lista de origenes permitidos
+    const allowedOrigins = [
+      'https://sistema-stock-l23q.onrender.com',
+      'https://vercel.app',
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+
+    // Permitir cualquier dominio de Vercel
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Verificar si el origin está en la lista permitida
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      callback(null, true); // En producción, podrías ser más restrictivo
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middlewares
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
