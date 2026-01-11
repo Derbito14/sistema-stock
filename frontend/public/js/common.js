@@ -1,5 +1,5 @@
 // Configuración global
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://sistema-stock-l23q.onrender.com/api';
 
 // Verificar autenticación al cargar cualquier página
 document.addEventListener('DOMContentLoaded', async () => {
@@ -24,6 +24,19 @@ async function verifyAuth() {
       }
     });
 
+    // Verificar si la respuesta es OK
+    if (!response.ok) {
+      // Si es 401 (no autorizado), el token es inválido
+      if (response.status === 401) {
+        console.error('Token inválido o expirado');
+        logout();
+        return false;
+      }
+      // Para otros errores, no hacer logout automático
+      console.error('Error en la verificación:', response.status);
+      return false;
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -36,12 +49,14 @@ async function verifyAuth() {
 
       return true;
     } else {
+      // Solo hacer logout si el token es inválido
       logout();
       return false;
     }
   } catch (error) {
-    console.error('Error al verificar token:', error);
-    logout();
+    console.error('Error de red al verificar token:', error);
+    // No hacer logout automático en errores de red
+    // El usuario puede tener problemas temporales de conexión
     return false;
   }
 }
@@ -74,6 +89,12 @@ function getToken() {
 async function authenticatedFetch(url, options = {}) {
   const token = getToken();
 
+  if (!token) {
+    console.error('No hay token disponible');
+    window.location.href = 'index.html';
+    throw new Error('No autenticado');
+  }
+
   const defaultHeaders = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
@@ -89,6 +110,14 @@ async function authenticatedFetch(url, options = {}) {
 
   try {
     const response = await fetch(url, config);
+
+    // Si es 401, el token expiró o es inválido
+    if (response.status === 401) {
+      console.error('Token inválido o expirado');
+      logout();
+      throw new Error('Sesión expirada');
+    }
+
     return response;
   } catch (error) {
     console.error('Error en fetch:', error);

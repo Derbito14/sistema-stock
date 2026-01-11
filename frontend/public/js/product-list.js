@@ -27,6 +27,15 @@ async function loadProducts() {
     emptyEl.style.display = 'none';
 
     const response = await authenticatedFetch(`${API_URL}/products`);
+
+    // Verificar si la respuesta es OK
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error del servidor: ${response.status} ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al cargar productos');
+    }
+
     const data = await response.json();
 
     loadingEl.style.display = 'none';
@@ -46,7 +55,13 @@ async function loadProducts() {
   } catch (error) {
     console.error('Error al cargar productos:', error);
     loadingEl.style.display = 'none';
-    errorEl.textContent = 'Error de conexión con el servidor';
+
+    let errorMessage = 'Error de conexión con el servidor';
+    if (error.message && !error.message.includes('Failed to fetch')) {
+      errorMessage = error.message;
+    }
+
+    errorEl.textContent = errorMessage;
     errorEl.style.display = 'block';
   }
 }
@@ -87,7 +102,7 @@ function renderProducts(products) {
 }
 
 async function deleteProduct(productId, productName) {
-  if (!confirm(`¿Está seguro de eliminar el producto "${productName}"?\n\nNota: Solo se puede eliminar si el stock es 0.`)) {
+  if (!confirm(`¿Está seguro de eliminar el producto "${productName}"?\n\nNota: Solo se puede eliminar si no tiene movimientos de stock.`)) {
     return;
   }
 
@@ -96,22 +111,30 @@ async function deleteProduct(productId, productName) {
       method: 'DELETE'
     });
 
+    // Verificar si la respuesta es OK
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error del servidor: ${response.status} ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al eliminar producto');
+    }
+
     const data = await response.json();
 
     if (data.success) {
       alert(`Producto "${productName}" eliminado exitosamente.`);
       loadProducts();
     } else {
-      // Mostrar mensaje específico con stock actual si está disponible
-      if (data.currentStock !== undefined) {
-        alert(`${data.message}\n\nStock actual del producto: ${data.currentStock} unidades`);
+      // Mostrar mensaje específico
+      if (data.movementCount !== undefined) {
+        alert(`${data.message}\n\nMovimientos asociados: ${data.movementCount}`);
       } else {
         alert('Error: ' + data.message);
       }
     }
   } catch (error) {
     console.error('Error al eliminar producto:', error);
-    alert('Error de conexión con el servidor');
+    alert(error.message || 'Error de conexión con el servidor');
   }
 }
 
@@ -138,6 +161,12 @@ function setupEditForm() {
 async function openEditModal(productId) {
   try {
     const response = await authenticatedFetch(`${API_URL}/products`);
+
+    // Verificar si la respuesta es OK
+    if (!response.ok) {
+      throw new Error('Error al cargar productos');
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -146,11 +175,13 @@ async function openEditModal(productId) {
         currentEditProduct = product;
         fillEditForm(product);
         document.getElementById('editModal').style.display = 'flex';
+      } else {
+        alert('Producto no encontrado');
       }
     }
   } catch (error) {
     console.error('Error al cargar producto:', error);
-    alert('Error al cargar los datos del producto');
+    alert(error.message || 'Error al cargar los datos del producto');
   }
 }
 
@@ -224,6 +255,14 @@ async function handleEditSubmit(e) {
       })
     });
 
+    // Verificar si la respuesta es OK
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error del servidor: ${response.status} ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al actualizar producto');
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -240,7 +279,7 @@ async function handleEditSubmit(e) {
     }
   } catch (error) {
     console.error('Error al actualizar producto:', error);
-    errorEl.textContent = 'Error de conexión con el servidor';
+    errorEl.textContent = error.message || 'Error de conexión con el servidor';
     errorEl.style.display = 'block';
   } finally {
     submitBtn.disabled = false;
