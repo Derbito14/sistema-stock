@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = "https://sistema-stock-l23q.onrender.com/api";
 
 // Verificar autenticación al cargar
 document.addEventListener('DOMContentLoaded', async () => {
