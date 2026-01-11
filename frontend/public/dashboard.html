@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesión</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menú lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link active">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="movement-register.html" class="sidebar-link">
+            <span class="sidebar-icon">➕</span>
+            <span>Registrar Movimiento</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="welcome-section">
+          <h2>Bienvenido al Sistema de Stock</h2>
+          <p>Selecciona una opción del menú lateral para comenzar.</p>
+
+          <div class="quick-access">
+            <h3>Accesos Rápidos</h3>
+            <div class="quick-cards">
+              <a href="product-form.html" class="quick-card">
+                <div class="quick-card-icon">📦</div>
+                <h4>Alta de Productos</h4>
+                <p>Registrar nuevos productos en el catálogo sin stock inicial</p>
+              </a>
+
+              <a href="product-list.html" class="quick-card">
+                <div class="quick-card-icon">📋</div>
+                <h4>Listado de Productos</h4>
+                <p>Ver todos los productos registrados con su stock actual calculado</p>
+              </a>
+
+              <a href="movement-register.html" class="quick-card">
+                <div class="quick-card-icon">➕</div>
+                <h4>Registrar Movimiento</h4>
+                <p>Registrar ingresos o egresos de stock con múltiples productos</p>
+              </a>
+
+              <a href="stock-movements.html" class="quick-card">
+                <div class="quick-card-icon">📊</div>
+                <h4>Ver Movimientos</h4>
+                <p>Consultar historial de movimientos de stock con filtros</p>
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

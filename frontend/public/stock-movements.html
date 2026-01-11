@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver Movimientos - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesión</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menú lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="movement-register.html" class="sidebar-link">
+            <span class="sidebar-icon">➕</span>
+            <span>Registrar Movimiento</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link active">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="page-header">
+          <h2>Movimientos de Stock</h2>
+          <div class="header-actions">
+            <button id="btnLimpiarFiltros" class="btn-secondary">Limpiar Filtros</button>
+            <a href="movement-register.html" class="btn-primary">+ Registrar Movimiento</a>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-card">
+          <h3>Filtros de Búsqueda</h3>
+
+          <form id="filtersForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="filtroTipo">Tipo de Movimiento</label>
+                <select id="filtroTipo" class="form-select">
+                  <option value="">Todos</option>
+                  <option value="INGRESO">INGRESO</option>
+                  <option value="EGRESO">EGRESO</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="filtroFechaDesde">Fecha Desde</label>
+                <input type="date" id="filtroFechaDesde">
+              </div>
+
+              <div class="form-group">
+                <label for="filtroFechaHasta">Fecha Hasta</label>
+                <input type="date" id="filtroFechaHasta">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="filtroCodigoInterno">Código Interno / Código de Barras</label>
+                <input
+                  type="text"
+                  id="filtroCodigoInterno"
+                  placeholder="Ej: P-000001 o código de barras"
+                  autocomplete="off"
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="filtroNombreProducto">Nombre de Producto</label>
+                <input
+                  type="text"
+                  id="filtroNombreProducto"
+                  placeholder="Buscar por nombre"
+                  autocomplete="off"
+                >
+              </div>
+
+              <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn-primary" style="width: 100%;">
+                  🔍 Buscar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Resultados -->
+        <div id="loadingMovements" class="loading-text">Cargando movimientos...</div>
+        <div id="errorMovements" class="error-message"></div>
+
+        <div id="movementsContainer" style="display: none;">
+          <div class="table-info">
+            <p>Movimientos encontrados: <strong id="totalMovements">0</strong></p>
+          </div>
+
+          <!-- Tabla de movimientos -->
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código Interno</th>
+                  <th>Nombre del Producto</th>
+                  <th class="text-center">Cantidad</th>
+                  <th class="text-right">Precio</th>
+                  <th>Comprobante</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                </tr>
+              </thead>
+              <tbody id="movementsTableBody">
+                <!-- Los movimientos se cargarán aquí -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="emptyMovements" class="empty-message" style="display: none;">
+          <p>No se encontraron movimientos con los filtros aplicados.</p>
+          <a href="movement-register.html" class="btn-primary">Registrar primer movimiento</a>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/stock-movements.js"></script>
+</body>
+</html>

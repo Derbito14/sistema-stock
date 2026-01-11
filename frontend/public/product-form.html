@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alta de Productos - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesión</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menú lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link active">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="movement-register.html" class="sidebar-link">
+            <span class="sidebar-icon">➕</span>
+            <span>Registrar Movimiento</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="page-header">
+          <h2>Alta de Productos</h2>
+          <p>Registrar nuevos productos en el catálogo (sin stock inicial)</p>
+        </div>
+
+        <div class="form-card">
+          <form id="productForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="barcode">Código de Barras (Opcional)</label>
+                <input
+                  type="text"
+                  id="barcode"
+                  name="barcode"
+                  placeholder="Escanea o ingresa el código"
+                  autocomplete="off"
+                >
+                <small>Si no tiene código de barras, déjalo vacío</small>
+              </div>
+
+              <div class="form-group">
+                <label for="name">Nombre del Producto *</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Ej: Coca Cola 500ml"
+                  required
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="price">Precio ($) *</label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  value="0"
+                  required
+                >
+              </div>
+
+              <div class="form-group">
+                <label for="minStock">Stock Mínimo *</label>
+                <input
+                  type="number"
+                  id="minStock"
+                  name="minStock"
+                  placeholder="0"
+                  min="0"
+                  value="0"
+                  required
+                >
+                <small>Alerta cuando el stock esté por debajo de este valor</small>
+              </div>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>Nota:</strong> El código interno (P-000001) se generará automáticamente.
+              El stock inicial se registra mediante movimientos de stock.
+            </div>
+
+            <div id="formError" class="error-message"></div>
+            <div id="formSuccess" class="success-message"></div>
+
+            <div class="form-actions">
+              <button type="submit" id="submitBtn" class="btn-primary">
+                Guardar Producto
+              </button>
+              <a href="product-list.html" class="btn-secondary">
+                Ver Listado
+              </a>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/product-form.js"></script>
+</body>
+</html>
