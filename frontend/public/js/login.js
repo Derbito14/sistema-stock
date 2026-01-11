@@ -36,6 +36,14 @@ loginForm.addEventListener('submit', async (e) => {
       body: JSON.stringify({ username, password })
     });
 
+    // Verificar si la respuesta es OK (status 200-299)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error del servidor: ${response.status} ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error en la respuesta del servidor');
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -51,8 +59,18 @@ loginForm.addEventListener('submit', async (e) => {
       loginBtn.textContent = 'Ingresar';
     }
   } catch (error) {
-    console.error('Error:', error);
-    showError('Error de conexión. Verifica que el servidor esté corriendo.');
+    console.error('Error completo:', error);
+
+    // Mensajes más descriptivos según el tipo de error
+    let errorMessage = 'Error de conexión con el servidor.';
+
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      errorMessage = 'No se pudo conectar al servidor. Verifica tu conexión a internet.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    showError(errorMessage);
     loginBtn.disabled = false;
     loginBtn.textContent = 'Ingresar';
   }

@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    // Verificar si la respuesta es OK (status 200-299)
+    if (!response.ok) {
+      console.error('Error en la verificación:', response.status, response.statusText);
+      logout();
+      return;
+    }
+
     const data = await response.json();
 
     if (data.success) {
@@ -29,7 +36,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       logout();
     }
   } catch (error) {
-    console.error('Error al verificar token:', error);
+    console.error('Error completo al verificar token:', error);
+
+    // Mostrar mensaje más descriptivo en la consola
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      console.error('No se pudo conectar al servidor backend en:', API_URL);
+    }
+
     logout();
   }
 });
