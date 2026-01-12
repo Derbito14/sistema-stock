@@ -54,9 +54,64 @@
         <div class="page-header">
           <h2>Listado de Productos</h2>
           <div class="header-actions">
+            <button id="btnLimpiarFiltros" class="btn-secondary">Limpiar Filtros</button>
             <button id="refreshBtn" class="btn-secondary">🔄 Actualizar</button>
             <a href="product-form.html" class="btn-primary">+ Nuevo Producto</a>
           </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-card">
+          <h3>Filtros</h3>
+          <form id="filtersForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroCodigo">Código Interno</label>
+              <input
+                type="text"
+                id="filtroCodigo"
+                placeholder="P-000001"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroBarcode">Código de Barras</label>
+              <input
+                type="text"
+                id="filtroBarcode"
+                placeholder="Código de barras"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroNombre">Nombre</label>
+              <input
+                type="text"
+                id="filtroNombre"
+                placeholder="Buscar por nombre"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroStock">Stock</label>
+              <select id="filtroStock" class="form-select">
+                <option value="">Todos</option>
+                <option value="bajo">Bajo mínimo</option>
+                <option value="sin">Sin stock</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroActivo">Estado</label>
+              <select id="filtroActivo" class="form-select">
+                <option value="">Todos</option>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
+          </form>
         </div>
 
         <div id="loadingProducts" class="loading-text">Cargando productos...</div>
@@ -64,7 +119,10 @@
 
         <div id="productsTableContainer" style="display: none;">
           <div class="table-info">
-            <p>Total de productos: <strong id="totalProducts">0</strong></p>
+            <p>
+              Mostrando: <strong id="totalProducts">0</strong> productos
+              <span id="filteredInfo" style="color: #666; font-size: 14px;"></span>
+            </p>
           </div>
 
           <div class="table-responsive">

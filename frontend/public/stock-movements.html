@@ -54,6 +54,8 @@
         <div class="page-header">
           <h2>Movimientos de Stock</h2>
           <div class="header-actions">
+            <button id="btnExportCSV" class="btn-secondary">Exportar CSV</button>
+            <button id="btnExportExcel" class="btn-secondary">Exportar Excel</button>
             <button id="btnLimpiarFiltros" class="btn-secondary">Limpiar Filtros</button>
             <a href="movement-register.html" class="btn-primary">+ Registrar Movimiento</a>
           </div>
@@ -63,55 +65,49 @@
         <div class="filters-card">
           <h3>Filtros de Búsqueda</h3>
 
-          <form id="filtersForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="filtroTipo">Tipo de Movimiento</label>
-                <select id="filtroTipo" class="form-select">
-                  <option value="">Todos</option>
-                  <option value="INGRESO">INGRESO</option>
-                  <option value="EGRESO">EGRESO</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="filtroFechaDesde">Fecha Desde</label>
-                <input type="date" id="filtroFechaDesde">
-              </div>
-
-              <div class="form-group">
-                <label for="filtroFechaHasta">Fecha Hasta</label>
-                <input type="date" id="filtroFechaHasta">
-              </div>
+          <form id="filtersForm" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroTipo">Tipo</label>
+              <select id="filtroTipo" class="form-select">
+                <option value="">Todos</option>
+                <option value="INGRESO">INGRESO</option>
+                <option value="EGRESO">EGRESO</option>
+              </select>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label for="filtroCodigoInterno">Código Interno / Código de Barras</label>
-                <input
-                  type="text"
-                  id="filtroCodigoInterno"
-                  placeholder="Ej: P-000001 o código de barras"
-                  autocomplete="off"
-                >
-              </div>
-
-              <div class="form-group">
-                <label for="filtroNombreProducto">Nombre de Producto</label>
-                <input
-                  type="text"
-                  id="filtroNombreProducto"
-                  placeholder="Buscar por nombre"
-                  autocomplete="off"
-                >
-              </div>
-
-              <div class="form-group" style="display: flex; align-items: flex-end;">
-                <button type="submit" class="btn-primary" style="width: 100%;">
-                  🔍 Buscar
-                </button>
-              </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroFechaDesde">Desde</label>
+              <input type="date" id="filtroFechaDesde">
             </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroFechaHasta">Hasta</label>
+              <input type="date" id="filtroFechaHasta">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroCodigoInterno">Código</label>
+              <input
+                type="text"
+                id="filtroCodigoInterno"
+                placeholder="P-000001"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filtroNombreProducto">Producto</label>
+              <input
+                type="text"
+                id="filtroNombreProducto"
+                placeholder="Nombre"
+                autocomplete="off"
+              >
+            </div>
+
+            <button type="submit" class="btn-primary">
+              🔍 Buscar
+            </button>
           </form>
         </div>
 
@@ -120,8 +116,13 @@
         <div id="errorMovements" class="error-message"></div>
 
         <div id="movementsContainer" style="display: none;">
-          <div class="table-info">
+          <div class="table-info" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
             <p>Movimientos encontrados: <strong id="totalMovements">0</strong></p>
+            <div style="display: flex; gap: 20px; font-size: 14px;">
+              <span>Entradas: <strong style="color: #28a745;" id="totalEntradas">0</strong></span>
+              <span>Salidas: <strong style="color: #dc3545;" id="totalSalidas">0</strong></span>
+              <span>Balance: <strong id="balance">0</strong></span>
+            </div>
           </div>
 
           <!-- Tabla de movimientos -->

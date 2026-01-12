@@ -105,36 +105,24 @@
             <h4>Buscar y Agregar Producto</h4>
 
             <div class="form-row">
-              <div class="form-group">
-                <label for="productCode">Código de Barras / Código Interno</label>
-                <input
-                  type="text"
-                  id="productCode"
-                  placeholder="Escanea o ingresa el código"
-                  autocomplete="off"
-                >
-                <small>Presiona Enter para buscar</small>
-              </div>
-
-              <div class="form-group" style="position: relative;">
-                <label for="productName">Buscar por Nombre</label>
+              <div class="form-group" style="position: relative; flex: 2;">
+                <label for="productSearch">Buscar Producto</label>
                 <div class="search-input-wrapper">
                   <input
                     type="text"
-                    id="productName"
-                    placeholder="Escribe para buscar..."
+                    id="productSearch"
+                    placeholder="Escribe código o nombre del producto..."
                     autocomplete="off"
                   >
                   <span class="search-icon">🔍</span>
                 </div>
-                <small>Escribe el nombre del producto</small>
+                <small>Busca por código interno, código de barras o nombre</small>
 
                 <!-- Dropdown de resultados -->
                 <div id="searchDropdown" class="search-dropdown" style="display: none;">
                   <div id="searchResults"></div>
                 </div>
               </div>
-            </div>
 
             <div class="form-row">
               <div class="form-group">

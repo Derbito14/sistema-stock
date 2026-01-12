@@ -1,8 +1,14 @@
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', () => {
+  // Establecer fechas por defecto (hoy)
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('filtroFechaDesde').value = today;
+  document.getElementById('filtroFechaHasta').value = today;
+
   loadMovements();
   setupFilters();
   setupLimpiarFiltros();
+  setupExportButtons();
 });
 
 // Configurar formulario de filtros
@@ -67,6 +73,7 @@ async function loadMovements() {
         emptyEl.style.display = 'block';
       } else {
         renderMovements(data.movements);
+        calculateAndDisplayTotals(data.movements);
         document.getElementById('totalMovements').textContent = data.movements.length;
         containerEl.style.display = 'block';
       }
@@ -126,4 +133,201 @@ function getUsuarioName(usuario) {
   if (!usuario) return 'Usuario desconocido';
   if (typeof usuario === 'object') return usuario.username || 'Usuario desconocido';
   return usuario;
+}
+
+// Calcular y mostrar totales
+function calculateAndDisplayTotals(movements) {
+  let totalEntradas = 0;
+  let totalSalidas = 0;
+
+  movements.forEach(movement => {
+    if (movement.tipo === 'INGRESO') {
+      totalEntradas += movement.cantidad;
+    } else if (movement.tipo === 'EGRESO') {
+      totalSalidas += movement.cantidad;
+    }
+  });
+
+  const balance = totalEntradas - totalSalidas;
+
+  document.getElementById('totalEntradas').textContent = totalEntradas;
+  document.getElementById('totalSalidas').textContent = totalSalidas;
+  document.getElementById('balance').textContent = balance;
+
+  // Aplicar clase de color al balance
+  const balanceEl = document.getElementById('balance');
+  balanceEl.className = '';
+  if (balance > 0) {
+    balanceEl.classList.add('text-success');
+  } else if (balance < 0) {
+    balanceEl.classList.add('text-danger');
+  }
+}
+
+// Configurar botones de exportación
+function setupExportButtons() {
+  const btnExportCSV = document.getElementById('btnExportCSV');
+  const btnExportExcel = document.getElementById('btnExportExcel');
+
+  if (btnExportCSV) {
+    btnExportCSV.addEventListener('click', exportToCSV);
+  }
+
+  if (btnExportExcel) {
+    btnExportExcel.addEventListener('click', exportToExcel);
+  }
+}
+
+// Obtener movimientos actuales desde la tabla
+function getCurrentMovements() {
+  const tbody = document.getElementById('movementsTableBody');
+  const rows = tbody.querySelectorAll('tr');
+  const movements = [];
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length >= 8) {
+      movements.push({
+        codigoInterno: cells[0].textContent.trim(),
+        nombreProducto: cells[1].textContent.trim(),
+        cantidad: cells[2].textContent.trim(),
+        precio: cells[3].textContent.trim(),
+        comprobante: cells[4].textContent.trim(),
+        tipo: cells[5].textContent.trim(),
+        fecha: cells[6].textContent.trim(),
+        usuario: cells[7].textContent.trim()
+      });
+    }
+  });
+
+  return movements;
+}
+
+// Exportar a CSV
+function exportToCSV() {
+  const movements = getCurrentMovements();
+
+  if (movements.length === 0) {
+    alert('No hay movimientos para exportar');
+    return;
+  }
+
+  // Crear CSV
+  const headers = ['Código Interno', 'Nombre Producto', 'Cantidad', 'Precio', 'Comprobante', 'Tipo', 'Fecha', 'Usuario'];
+  let csv = headers.join(',') + '\n';
+
+  movements.forEach(mov => {
+    const row = [
+      `"${mov.codigoInterno}"`,
+      `"${mov.nombreProducto}"`,
+      mov.cantidad,
+      `"${mov.precio}"`,
+      `"${mov.comprobante}"`,
+      mov.tipo,
+      `"${mov.fecha}"`,
+      `"${mov.usuario}"`
+    ];
+    csv += row.join(',') + '\n';
+  });
+
+  // Agregar totales
+  const totalEntradas = document.getElementById('totalEntradas').textContent;
+  const totalSalidas = document.getElementById('totalSalidas').textContent;
+  const balance = document.getElementById('balance').textContent;
+
+  csv += '\n';
+  csv += `"Total Entradas","${totalEntradas}"\n`;
+  csv += `"Total Salidas","${totalSalidas}"\n`;
+  csv += `"Balance","${balance}"\n`;
+
+  // Descargar archivo
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  const fecha = new Date().toISOString().split('T')[0];
+  link.setAttribute('href', url);
+  link.setAttribute('download', `movimientos_${fecha}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Exportar a Excel (formato HTML que Excel puede abrir)
+function exportToExcel() {
+  const movements = getCurrentMovements();
+
+  if (movements.length === 0) {
+    alert('No hay movimientos para exportar');
+    return;
+  }
+
+  // Crear tabla HTML para Excel
+  let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+  html += '<head>';
+  html += '<meta charset="UTF-8">';
+  html += '<style>table { border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }</style>';
+  html += '</head>';
+  html += '<body>';
+  html += '<table>';
+
+  // Encabezados
+  html += '<thead><tr>';
+  html += '<th>Código Interno</th>';
+  html += '<th>Nombre Producto</th>';
+  html += '<th>Cantidad</th>';
+  html += '<th>Precio</th>';
+  html += '<th>Comprobante</th>';
+  html += '<th>Tipo</th>';
+  html += '<th>Fecha</th>';
+  html += '<th>Usuario</th>';
+  html += '</tr></thead>';
+
+  // Datos
+  html += '<tbody>';
+  movements.forEach(mov => {
+    html += '<tr>';
+    html += `<td>${mov.codigoInterno}</td>`;
+    html += `<td>${mov.nombreProducto}</td>`;
+    html += `<td>${mov.cantidad}</td>`;
+    html += `<td>${mov.precio}</td>`;
+    html += `<td>${mov.comprobante}</td>`;
+    html += `<td>${mov.tipo}</td>`;
+    html += `<td>${mov.fecha}</td>`;
+    html += `<td>${mov.usuario}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody>';
+
+  // Totales
+  const totalEntradas = document.getElementById('totalEntradas').textContent;
+  const totalSalidas = document.getElementById('totalSalidas').textContent;
+  const balance = document.getElementById('balance').textContent;
+
+  html += '<tfoot>';
+  html += '<tr><td colspan="8"></td></tr>';
+  html += `<tr><td colspan="2"><strong>Total Entradas</strong></td><td colspan="6">${totalEntradas}</td></tr>`;
+  html += `<tr><td colspan="2"><strong>Total Salidas</strong></td><td colspan="6">${totalSalidas}</td></tr>`;
+  html += `<tr><td colspan="2"><strong>Balance</strong></td><td colspan="6">${balance}</td></tr>`;
+  html += '</tfoot>';
+
+  html += '</table>';
+  html += '</body>';
+  html += '</html>';
+
+  // Descargar archivo
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  const fecha = new Date().toISOString().split('T')[0];
+  link.setAttribute('href', url);
+  link.setAttribute('download', `movimientos_${fecha}.xls`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

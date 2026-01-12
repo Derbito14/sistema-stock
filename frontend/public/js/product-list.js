@@ -1,8 +1,12 @@
+// Cache de todos los productos
+let allProducts = [];
+
 // Cargar productos al iniciar
 document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   setupRefreshButton();
   setupEditForm();
+  setupFilters();
 });
 
 function setupRefreshButton() {
@@ -11,6 +15,115 @@ function setupRefreshButton() {
     refreshBtn.addEventListener('click', () => {
       loadProducts();
     });
+  }
+}
+
+// Configurar filtros
+function setupFilters() {
+  const filtroCodigo = document.getElementById('filtroCodigo');
+  const filtroBarcode = document.getElementById('filtroBarcode');
+  const filtroNombre = document.getElementById('filtroNombre');
+  const filtroStock = document.getElementById('filtroStock');
+  const filtroActivo = document.getElementById('filtroActivo');
+  const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+
+  // Aplicar filtros al escribir (con debounce)
+  let filterTimeout;
+  const applyFiltersDebounced = () => {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      applyFilters();
+    }, 300);
+  };
+
+  filtroCodigo.addEventListener('input', applyFiltersDebounced);
+  filtroBarcode.addEventListener('input', applyFiltersDebounced);
+  filtroNombre.addEventListener('input', applyFiltersDebounced);
+  filtroStock.addEventListener('change', applyFilters);
+  filtroActivo.addEventListener('change', applyFilters);
+
+  // Limpiar filtros
+  btnLimpiar.addEventListener('click', () => {
+    filtroCodigo.value = '';
+    filtroBarcode.value = '';
+    filtroNombre.value = '';
+    filtroStock.value = '';
+    filtroActivo.value = '';
+    applyFilters();
+  });
+}
+
+// Aplicar filtros a los productos
+function applyFilters() {
+  const filtroCodigo = document.getElementById('filtroCodigo').value.trim().toLowerCase();
+  const filtroBarcode = document.getElementById('filtroBarcode').value.trim().toLowerCase();
+  const filtroNombre = document.getElementById('filtroNombre').value.trim().toLowerCase();
+  const filtroStock = document.getElementById('filtroStock').value;
+  const filtroActivo = document.getElementById('filtroActivo').value;
+
+  let filtered = allProducts.filter(product => {
+    // Filtro por código interno
+    if (filtroCodigo && !product.codigoInterno.toLowerCase().includes(filtroCodigo)) {
+      return false;
+    }
+
+    // Filtro por código de barras
+    if (filtroBarcode) {
+      if (!product.barcode || !product.barcode.toLowerCase().includes(filtroBarcode)) {
+        return false;
+      }
+    }
+
+    // Filtro por nombre
+    if (filtroNombre && !product.name.toLowerCase().includes(filtroNombre)) {
+      return false;
+    }
+
+    // Filtro por stock
+    if (filtroStock === 'bajo' && product.stock > product.minStock) {
+      return false;
+    }
+    if (filtroStock === 'sin' && product.stock > 0) {
+      return false;
+    }
+
+    // Filtro por activo
+    if (filtroActivo !== '') {
+      const isActive = filtroActivo === 'true';
+      if (product.activo !== isActive) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Renderizar productos filtrados
+  renderProducts(filtered);
+
+  // Actualizar contador
+  const totalEl = document.getElementById('totalProducts');
+  const filteredInfoEl = document.getElementById('filteredInfo');
+
+  totalEl.textContent = filtered.length;
+
+  if (filtered.length < allProducts.length) {
+    filteredInfoEl.textContent = `(de ${allProducts.length} totales)`;
+  } else {
+    filteredInfoEl.textContent = '';
+  }
+
+  // Mostrar mensaje si no hay resultados
+  const tableContainer = document.getElementById('productsTableContainer');
+  const emptyEl = document.getElementById('emptyProducts');
+
+  if (filtered.length === 0) {
+    tableContainer.style.display = 'none';
+    emptyEl.innerHTML = '<p>No se encontraron productos con los filtros aplicados.</p><button class="btn-secondary" onclick="document.getElementById(\'btnLimpiarFiltros\').click()">Limpiar Filtros</button>';
+    emptyEl.style.display = 'block';
+  } else {
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
   }
 }
 
@@ -41,12 +154,14 @@ async function loadProducts() {
     loadingEl.style.display = 'none';
 
     if (data.success) {
+      allProducts = data.products;
+
       if (data.products.length === 0) {
+        emptyEl.innerHTML = '<p>No hay productos registrados.</p><a href="product-form.html" class="btn-primary">Agregar primer producto</a>';
         emptyEl.style.display = 'block';
       } else {
-        renderProducts(data.products);
-        document.getElementById('totalProducts').textContent = data.products.length;
-        tableContainer.style.display = 'block';
+        // Aplicar filtros (o mostrar todos si no hay filtros)
+        applyFilters();
       }
     } else {
       errorEl.textContent = data.message || 'Error al cargar productos';

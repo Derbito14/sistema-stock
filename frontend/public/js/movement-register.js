@@ -80,68 +80,53 @@ function irAPaso2() {
   // Setup paso 2
   setupStep2();
 
-  // Foco en código de producto
-  document.getElementById('productCode').focus();
+  // Foco en búsqueda de producto
+  document.getElementById('productSearch').focus();
 }
 
 // ===== PASO 2: Agregar Productos =====
 
 function setupStep2() {
-  const productCodeInput = document.getElementById('productCode');
-  const productNameInput = document.getElementById('productName');
+  const productSearchInput = document.getElementById('productSearch');
   const cantidadInput = document.getElementById('cantidad');
   const btnAgregar = document.getElementById('btnAgregarProducto');
   const btnConfirmar = document.getElementById('btnConfirmarMovimiento');
   const btnCancelar = document.getElementById('btnCancelar');
 
-  // Cargar todos los productos para búsqueda por nombre
+  // Cargar todos los productos para búsqueda
   cargarTodosLosProductos();
 
-  // Buscar producto con Enter
-  productCodeInput.addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const code = productCodeInput.value.trim();
-      if (code) {
-        await buscarProducto(code);
-      }
-    }
-  });
-
-  // Búsqueda por nombre con dropdown
+  // Búsqueda unificada con dropdown
   let searchTimeout;
-  productNameInput.addEventListener('input', (e) => {
+  productSearchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     const query = e.target.value.trim();
 
-    if (query.length < 2) {
+    if (query.length < 1) {
       ocultarDropdown();
       return;
     }
 
     searchTimeout = setTimeout(() => {
-      buscarProductoPorNombre(query);
+      buscarProductoUnificado(query);
     }, 300); // Debounce de 300ms
+  });
+
+  // Permitir buscar con Enter
+  productSearchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const query = productSearchInput.value.trim();
+      if (query) {
+        buscarProductoUnificado(query);
+      }
+    }
   });
 
   // Ocultar dropdown al hacer clic fuera
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-dropdown') && !e.target.closest('#productName')) {
+    if (!e.target.closest('.search-dropdown') && !e.target.closest('#productSearch')) {
       ocultarDropdown();
-    }
-  });
-
-  // Limpiar código cuando se escribe en nombre y viceversa
-  productCodeInput.addEventListener('input', () => {
-    if (productCodeInput.value) {
-      productNameInput.value = '';
-      ocultarDropdown();
-    }
-  });
-
-  productNameInput.addEventListener('input', () => {
-    if (productNameInput.value) {
-      productCodeInput.value = '';
     }
   });
 
@@ -177,35 +162,64 @@ async function cargarTodosLosProductos() {
   }
 }
 
-// Buscar productos por nombre y mostrar dropdown
-function buscarProductoPorNombre(query) {
+// Búsqueda unificada por código o nombre
+function buscarProductoUnificado(query) {
   const searchResults = document.getElementById('searchResults');
   const dropdown = document.getElementById('searchDropdown');
 
-  // Filtrar productos por nombre (case insensitive)
-  const queryLower = query.toLowerCase();
-  const results = allProductsCache.filter(product =>
-    product.name.toLowerCase().includes(queryLower) ||
-    product.codigoInterno.toLowerCase().includes(queryLower)
-  ).slice(0, 10); // Limitar a 10 resultados
-
-  if (results.length === 0) {
-    searchResults.innerHTML = '<div class="search-dropdown-empty">No se encontraron productos</div>';
+  if (allProductsCache.length === 0) {
+    searchResults.innerHTML = '<div class="search-dropdown-empty">Cargando productos...</div>';
     dropdown.style.display = 'block';
     return;
   }
 
-  // Renderizar resultados
-  searchResults.innerHTML = results.map(product => `
-    <div class="search-dropdown-item" onclick="seleccionarProductoDesdeDropdown('${product._id}')">
-      <strong>${escapeHtml(product.name)}</strong>
-      <small>
-        ${escapeHtml(product.codigoInterno)}
-        ${product.barcode ? ` | ${escapeHtml(product.barcode)}` : ''}
-        <span class="product-stock">Stock: ${product.stock || 0}</span>
-      </small>
-    </div>
-  `).join('');
+  // Filtrar productos por código interno, barcode o nombre (case insensitive)
+  const queryLower = query.toLowerCase();
+  const results = allProductsCache.filter(product => {
+    const matchName = product.name.toLowerCase().includes(queryLower);
+    const matchCodigo = product.codigoInterno.toLowerCase().includes(queryLower);
+    const matchBarcode = product.barcode && product.barcode.toLowerCase().includes(queryLower);
+    return matchName || matchCodigo || matchBarcode;
+  }).slice(0, 15); // Limitar a 15 resultados
+
+  if (results.length === 0) {
+    searchResults.innerHTML = '<div class="search-dropdown-empty">❌ No se encontraron productos</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  // Ordenar: primero las coincidencias exactas, luego por nombre
+  results.sort((a, b) => {
+    const aExact = a.codigoInterno.toLowerCase() === queryLower || (a.barcode && a.barcode.toLowerCase() === queryLower);
+    const bExact = b.codigoInterno.toLowerCase() === queryLower || (b.barcode && b.barcode.toLowerCase() === queryLower);
+    if (aExact && !bExact) return -1;
+    if (!aExact && bExact) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Renderizar resultados mejorados
+  searchResults.innerHTML = results.map(product => {
+    const stockClass = product.stock > 0 ? 'text-success' : 'text-danger';
+    const stockIcon = product.stock > 0 ? '✓' : '⚠';
+    return `
+      <div class="search-dropdown-item" onclick="seleccionarProductoDesdeDropdown('${product._id}')">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="flex: 1;">
+            <strong style="font-size: 14px;">${escapeHtml(product.name)}</strong>
+            <div style="font-size: 12px; color: #666; margin-top: 2px;">
+              <span>${escapeHtml(product.codigoInterno)}</span>
+              ${product.barcode ? `<span> | Barras: ${escapeHtml(product.barcode)}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align: right; white-space: nowrap; margin-left: 12px;">
+            <span class="${stockClass}" style="font-weight: 600; font-size: 13px;">
+              ${stockIcon} ${product.stock || 0}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 
   dropdown.style.display = 'block';
 }
@@ -237,7 +251,7 @@ async function seleccionarProductoDesdeDropdown(productId) {
   document.getElementById('btnAgregarProducto').disabled = false;
 
   // Limpiar búsqueda y ocultar dropdown
-  document.getElementById('productName').value = '';
+  document.getElementById('productSearch').value = '';
   ocultarDropdown();
 
   // Focus en cantidad
@@ -248,53 +262,6 @@ async function seleccionarProductoDesdeDropdown(productId) {
 // Ocultar dropdown
 function ocultarDropdown() {
   document.getElementById('searchDropdown').style.display = 'none';
-}
-
-async function buscarProducto(code) {
-  try {
-    hideMessage('errorAgregarProducto');
-
-    const response = await authenticatedFetch(`${API_URL}/products/search?code=${encodeURIComponent(code)}`);
-    const data = await response.json();
-
-    if (data.success) {
-      // Verificar si ya está en la lista
-      const yaAgregado = currentState.productos.find(p => p.productoId === data.product._id);
-      if (yaAgregado) {
-        showError('errorAgregarProducto', 'Este producto ya está en la lista');
-        return;
-      }
-
-      // Obtener stock actual
-      const stockResponse = await authenticatedFetch(`${API_URL}/products`);
-      const stockData = await stockResponse.json();
-      const productWithStock = stockData.products.find(p => p._id === data.product._id);
-
-      currentState.productoBuscado = {
-        ...data.product,
-        stock: productWithStock?.stock || 0
-      };
-
-      // Mostrar info del producto
-      document.getElementById('foundProductName').textContent = currentState.productoBuscado.name;
-      document.getElementById('foundProductStock').textContent = currentState.productoBuscado.stock;
-      document.getElementById('productFoundInfo').style.display = 'flex';
-
-      // Habilitar botón agregar
-      document.getElementById('btnAgregarProducto').disabled = false;
-
-      // Focus en cantidad
-      document.getElementById('cantidad').select();
-    } else {
-      showError('errorAgregarProducto', data.message || 'Producto no encontrado');
-      currentState.productoBuscado = null;
-      document.getElementById('productFoundInfo').style.display = 'none';
-      document.getElementById('btnAgregarProducto').disabled = true;
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showError('errorAgregarProducto', 'Error de conexión');
-  }
 }
 
 function agregarProductoALista() {
@@ -327,14 +294,14 @@ function agregarProductoALista() {
   renderProductosAgregados();
 
   // Limpiar búsqueda
-  document.getElementById('productCode').value = '';
+  document.getElementById('productSearch').value = '';
   document.getElementById('cantidad').value = '1';
   document.getElementById('productFoundInfo').style.display = 'none';
   document.getElementById('btnAgregarProducto').disabled = true;
   currentState.productoBuscado = null;
 
-  // Focus en código
-  document.getElementById('productCode').focus();
+  // Focus en búsqueda
+  document.getElementById('productSearch').focus();
 
   hideMessage('errorAgregarProducto');
 }
