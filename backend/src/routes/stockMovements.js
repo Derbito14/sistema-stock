@@ -178,10 +178,14 @@ router.get('/', async (req, res) => {
     if (fechaDesde || fechaHasta) {
       query.fecha = {};
       if (fechaDesde) {
+        // Inicio del día (00:00:00)
         query.fecha.$gte = new Date(fechaDesde);
       }
       if (fechaHasta) {
-        query.fecha.$lte = new Date(fechaHasta);
+        // Fin del día (23:59:59.999)
+        const endDate = new Date(fechaHasta);
+        endDate.setHours(23, 59, 59, 999);
+        query.fecha.$lte = endDate;
       }
     }
 
