@@ -103,7 +103,9 @@ function renderMovements(movements) {
     const precio = movement.producto?.price || 0;
     const isDeleted = !movement.producto;
 
-    // Tipo con badge
+    // Tipo con badge - usar tipoOriginal si existe, sino usar tipo
+    const tipoDisplay = movement.tipoOriginal || movement.tipo;
+    const tipoFormatted = formatTipoDisplay(tipoDisplay);
     const tipoClass = movement.tipo.toLowerCase();
 
     // Formatear precio
@@ -119,7 +121,7 @@ function renderMovements(movements) {
       <td class="text-center"><strong>${movement.cantidad}</strong></td>
       <td class="text-right">${precioFormatted}</td>
       <td>${escapeHtml(movement.comprobante)}</td>
-      <td><span class="badge tipo-${tipoClass}">${movement.tipo}</span></td>
+      <td><span class="badge tipo-${tipoClass}">${tipoFormatted}</span></td>
       <td>${formatDate(movement.fecha)}</td>
       <td>${getUsuarioName(movement.usuario)}</td>
     `;
@@ -133,6 +135,17 @@ function getUsuarioName(usuario) {
   if (!usuario) return 'Usuario desconocido';
   if (typeof usuario === 'object') return usuario.username || 'Usuario desconocido';
   return usuario;
+}
+
+// Formatear tipo para visualización
+function formatTipoDisplay(tipo) {
+  const displayNames = {
+    'INGRESO': 'Ingreso',
+    'EGRESO': 'Egreso',
+    'AJUSTE_POSITIVO': 'Ajuste + (AC+)',
+    'AJUSTE_NEGATIVO': 'Ajuste - (AC-)'
+  };
+  return displayNames[tipo] || tipo;
 }
 
 // Calcular y mostrar totales

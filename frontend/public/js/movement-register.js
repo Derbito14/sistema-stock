@@ -455,6 +455,7 @@ async function guardarComprobante() {
     const payload = {
       comprobante: comprobanteData.comprobante,
       tipo: tipoBackend,
+      tipoOriginal: tipo, // Guardar el tipo original (AJUSTE_POSITIVO, etc.)
       observacion: observaciones || `${tipo} - ${fecha}`,
       productos: lineasValidas.map(l => ({
         productoId: l.productoId,

@@ -54,7 +54,7 @@ router.get('/next-comprobante', async (req, res) => {
 // @access  Private
 router.post('/', async (req, res) => {
   try {
-    const { comprobante, tipo, productos, observacion } = req.body;
+    const { comprobante, tipo, productos, observacion, tipoOriginal } = req.body;
 
     // Validar campos requeridos
     if (!comprobante || !tipo || !productos || !Array.isArray(productos) || productos.length === 0) {
@@ -113,6 +113,7 @@ router.post('/', async (req, res) => {
         comprobante,
         producto: item.productoId,
         tipo,
+        tipoOriginal: tipoOriginal || tipo, // Guardar tipo original si existe
         cantidad: item.cantidad,
         observacion: observacion || '',
         usuario: req.user._id

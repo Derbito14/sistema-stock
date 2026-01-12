@@ -20,6 +20,14 @@ const stockMovementSchema = new mongoose.Schema({
     },
     required: [true, 'El tipo de movimiento es requerido']
   },
+  tipoOriginal: {
+    type: String,
+    enum: {
+      values: ['INGRESO', 'EGRESO', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO'],
+      message: 'El tipo original debe ser válido'
+    },
+    required: false
+  },
   cantidad: {
     type: Number,
     required: [true, 'La cantidad es requerida'],
