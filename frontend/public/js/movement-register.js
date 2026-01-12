@@ -1,155 +1,71 @@
-// Estado del formulario
-let currentState = {
-  step: 1,
-  tipo: null,
-  comprobante: null,
-  observacion: '',
-  productos: [], // { productoId, productoData, cantidad }
-  productoBuscado: null
+// Estado del comprobante
+let comprobanteState = {
+  lineas: [], // { lineaId, productoId, productoData, cantidad }
+  nextLineaId: 1
 };
 
-// Cache de todos los productos para búsqueda por nombre
+// Cache de productos
 let allProductsCache = [];
+
+// Índice de línea actual para el modal de búsqueda
+let currentSearchLineIndex = null;
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
-  setupStep1();
-});
+  initializeForm();
+  setupEventListeners();
+  loadAllProducts();
 
-// ===== PASO 1: Tipo y Comprobante =====
-
-function setupStep1() {
-  const tipoSelect = document.getElementById('tipo');
-  const btnGenerar = document.getElementById('btnGenerarComprobante');
-
-  tipoSelect.addEventListener('change', () => {
-    btnGenerar.disabled = !tipoSelect.value;
-  });
-
-  btnGenerar.addEventListener('click', async () => {
-    await generarComprobanteYContinuar();
-  });
-}
-
-async function generarComprobanteYContinuar() {
-  const tipoSelect = document.getElementById('tipo');
-  const observacionInput = document.getElementById('observacion');
-
-  currentState.tipo = tipoSelect.value;
-  currentState.observacion = observacionInput.value.trim();
-
-  if (!currentState.tipo) {
-    alert('Selecciona un tipo de movimiento');
-    return;
-  }
-
-  try {
-    // Obtener el próximo comprobante
-    const response = await authenticatedFetch(`${API_URL}/stock-movements/next-comprobante`);
-    const data = await response.json();
-
-    if (data.success) {
-      currentState.comprobante = data.comprobante;
-      document.getElementById('comprobanteDisplay').textContent = data.comprobante;
-
-      // Pasar al paso 2
-      irAPaso2();
-    } else {
-      alert('Error al generar comprobante: ' + data.message);
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error de conexión al generar comprobante');
-  }
-}
-
-function irAPaso2() {
-  currentState.step = 2;
-
-  // Ocultar paso 1, mostrar paso 2
-  document.getElementById('step1').style.display = 'none';
-  document.getElementById('step2').style.display = 'block';
-
-  // Mostrar info del comprobante
-  document.getElementById('comprobanteActual').textContent = currentState.comprobante;
-
-  const tipoBadge = document.getElementById('tipoActual');
-  tipoBadge.textContent = currentState.tipo;
-  tipoBadge.className = `badge tipo-${currentState.tipo.toLowerCase()}`;
-
-  // Setup paso 2
-  setupStep2();
-
-  // Foco en búsqueda de producto
-  document.getElementById('productSearch').focus();
-}
-
-// ===== PASO 2: Agregar Productos =====
-
-function setupStep2() {
-  const productSearchInput = document.getElementById('productSearch');
-  const cantidadInput = document.getElementById('cantidad');
-  const btnAgregar = document.getElementById('btnAgregarProducto');
-  const btnConfirmar = document.getElementById('btnConfirmarMovimiento');
-  const btnCancelar = document.getElementById('btnCancelar');
-
-  // Cargar todos los productos para búsqueda
-  cargarTodosLosProductos();
-
-  // Búsqueda unificada con dropdown
-  let searchTimeout;
-  productSearchInput.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    const query = e.target.value.trim();
-
-    if (query.length < 1) {
-      ocultarDropdown();
-      return;
-    }
-
-    searchTimeout = setTimeout(() => {
-      buscarProductoUnificado(query);
-    }, 300); // Debounce de 300ms
-  });
-
-  // Permitir buscar con Enter
-  productSearchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+  // Atajo de teclado F2 para búsqueda por nombre
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F2') {
       e.preventDefault();
-      const query = productSearchInput.value.trim();
-      if (query) {
-        buscarProductoUnificado(query);
+      // Si hay un input de producto enfocado, abrir modal para esa línea
+      const focusedInput = document.activeElement;
+      if (focusedInput && focusedInput.classList.contains('product-search-input')) {
+        const lineaId = parseInt(focusedInput.dataset.lineaId);
+        openSearchModal(lineaId);
       }
     }
   });
+});
 
-  // Ocultar dropdown al hacer clic fuera
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-dropdown') && !e.target.closest('#productSearch')) {
-      ocultarDropdown();
+// Inicializar formulario
+function initializeForm() {
+  // Establecer fecha de hoy por defecto
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fechaMovimiento').value = today;
+
+  // Agregar primera línea automáticamente
+  agregarLinea();
+}
+
+// Configurar event listeners
+function setupEventListeners() {
+  document.getElementById('btnAgregarLinea').addEventListener('click', agregarLinea);
+  document.getElementById('btnGuardar').addEventListener('click', guardarComprobante);
+  document.getElementById('btnCancelar').addEventListener('click', cancelarComprobante);
+
+  // Modal de búsqueda
+  document.getElementById('searchModalInput').addEventListener('input', handleModalSearch);
+
+  // Cerrar modal con ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeSearchModal();
     }
   });
 
-  // Botón agregar
-  btnAgregar.addEventListener('click', () => {
-    agregarProductoALista();
-  });
-
-  // Botón confirmar
-  btnConfirmar.addEventListener('click', async () => {
-    await confirmarMovimiento();
-  });
-
-  // Botón cancelar
-  btnCancelar.addEventListener('click', () => {
-    if (confirm('¿Estás seguro de cancelar? Se perderán todos los productos agregados.')) {
-      resetearFormulario();
+  // Cerrar modal al hacer click fuera
+  document.getElementById('searchModal').addEventListener('click', (e) => {
+    if (e.target.id === 'searchModal') {
+      closeSearchModal();
     }
   });
 }
 
-// Cargar todos los productos para búsqueda por nombre
-async function cargarTodosLosProductos() {
+// Cargar todos los productos
+async function loadAllProducts() {
   try {
     const response = await authenticatedFetch(`${API_URL}/products`);
     const data = await response.json();
@@ -162,220 +78,391 @@ async function cargarTodosLosProductos() {
   }
 }
 
-// Búsqueda unificada por código o nombre
-function buscarProductoUnificado(query) {
-  const searchResults = document.getElementById('searchResults');
-  const dropdown = document.getElementById('searchDropdown');
+// Agregar nueva línea
+function agregarLinea() {
+  const lineaId = comprobanteState.nextLineaId++;
 
-  if (allProductsCache.length === 0) {
-    searchResults.innerHTML = '<div class="search-dropdown-empty">Cargando productos...</div>';
-    dropdown.style.display = 'block';
-    return;
-  }
-
-  // Filtrar productos por código interno, barcode o nombre (case insensitive)
-  const queryLower = query.toLowerCase();
-  const results = allProductsCache.filter(product => {
-    const matchName = product.name.toLowerCase().includes(queryLower);
-    const matchCodigo = product.codigoInterno.toLowerCase().includes(queryLower);
-    const matchBarcode = product.barcode && product.barcode.toLowerCase().includes(queryLower);
-    return matchName || matchCodigo || matchBarcode;
-  }).slice(0, 15); // Limitar a 15 resultados
-
-  if (results.length === 0) {
-    searchResults.innerHTML = '<div class="search-dropdown-empty">❌ No se encontraron productos</div>';
-    dropdown.style.display = 'block';
-    return;
-  }
-
-  // Ordenar: primero las coincidencias exactas, luego por nombre
-  results.sort((a, b) => {
-    const aExact = a.codigoInterno.toLowerCase() === queryLower || (a.barcode && a.barcode.toLowerCase() === queryLower);
-    const bExact = b.codigoInterno.toLowerCase() === queryLower || (b.barcode && b.barcode.toLowerCase() === queryLower);
-    if (aExact && !bExact) return -1;
-    if (!aExact && bExact) return 1;
-    return a.name.localeCompare(b.name);
+  comprobanteState.lineas.push({
+    lineaId,
+    productoId: null,
+    productoData: null,
+    cantidad: 1
   });
 
-  // Renderizar resultados mejorados
-  searchResults.innerHTML = results.map(product => {
-    const stockClass = product.stock > 0 ? 'text-success' : 'text-danger';
-    const stockIcon = product.stock > 0 ? '✓' : '⚠';
-    return `
-      <div class="search-dropdown-item" onclick="seleccionarProductoDesdeDropdown('${product._id}')">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-          <div style="flex: 1;">
-            <strong style="font-size: 14px;">${escapeHtml(product.name)}</strong>
-            <div style="font-size: 12px; color: #666; margin-top: 2px;">
-              <span>${escapeHtml(product.codigoInterno)}</span>
-              ${product.barcode ? `<span> | Barras: ${escapeHtml(product.barcode)}</span>` : ''}
-            </div>
-          </div>
-          <div style="text-align: right; white-space: nowrap; margin-left: 12px;">
-            <span class="${stockClass}" style="font-weight: 600; font-size: 13px;">
-              ${stockIcon} ${product.stock || 0}
-            </span>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+  renderLineas();
 
-  dropdown.style.display = 'block';
+  // Focus en el input de la nueva línea
+  setTimeout(() => {
+    const newInput = document.querySelector(`input[data-linea-id="${lineaId}"]`);
+    if (newInput) {
+      newInput.focus();
+    }
+  }, 50);
 }
 
-// Seleccionar un producto desde el dropdown
-async function seleccionarProductoDesdeDropdown(productId) {
-  const product = allProductsCache.find(p => p._id === productId);
+// Renderizar todas las líneas
+function renderLineas() {
+  const tbody = document.getElementById('detalleTableBody');
+  const table = document.getElementById('detalleTable');
+  const emptyMessage = document.getElementById('emptyDetalle');
 
-  if (!product) {
+  if (comprobanteState.lineas.length === 0) {
+    table.style.display = 'none';
+    emptyMessage.style.display = 'block';
     return;
   }
 
-  // Verificar si ya está en la lista
-  const yaAgregado = currentState.productos.find(p => p.productoId === product._id);
-  if (yaAgregado) {
-    showError('errorAgregarProducto', 'Este producto ya está en la lista');
-    ocultarDropdown();
-    return;
-  }
-
-  currentState.productoBuscado = product;
-
-  // Mostrar info del producto
-  document.getElementById('foundProductName').textContent = product.name;
-  document.getElementById('foundProductStock').textContent = product.stock || 0;
-  document.getElementById('productFoundInfo').style.display = 'flex';
-
-  // Habilitar botón agregar
-  document.getElementById('btnAgregarProducto').disabled = false;
-
-  // Limpiar búsqueda y ocultar dropdown
-  document.getElementById('productSearch').value = '';
-  ocultarDropdown();
-
-  // Focus en cantidad
-  document.getElementById('cantidad').select();
-  hideMessage('errorAgregarProducto');
-}
-
-// Ocultar dropdown
-function ocultarDropdown() {
-  document.getElementById('searchDropdown').style.display = 'none';
-}
-
-function agregarProductoALista() {
-  if (!currentState.productoBuscado) {
-    showError('errorAgregarProducto', 'Primero busca un producto');
-    return;
-  }
-
-  const cantidad = parseInt(document.getElementById('cantidad').value);
-
-  if (!cantidad || cantidad <= 0) {
-    showError('errorAgregarProducto', 'Ingresa una cantidad válida');
-    return;
-  }
-
-  // Para EGRESO, validar stock
-  if (currentState.tipo === 'EGRESO' && cantidad > currentState.productoBuscado.stock) {
-    showError('errorAgregarProducto', `Stock insuficiente. Disponible: ${currentState.productoBuscado.stock}`);
-    return;
-  }
-
-  // Agregar a la lista
-  currentState.productos.push({
-    productoId: currentState.productoBuscado._id,
-    productoData: currentState.productoBuscado,
-    cantidad
-  });
-
-  // Actualizar UI
-  renderProductosAgregados();
-
-  // Limpiar búsqueda
-  document.getElementById('productSearch').value = '';
-  document.getElementById('cantidad').value = '1';
-  document.getElementById('productFoundInfo').style.display = 'none';
-  document.getElementById('btnAgregarProducto').disabled = true;
-  currentState.productoBuscado = null;
-
-  // Focus en búsqueda
-  document.getElementById('productSearch').focus();
-
-  hideMessage('errorAgregarProducto');
-}
-
-function renderProductosAgregados() {
-  const tbody = document.getElementById('productosTableBody');
-  const emptyEl = document.getElementById('emptyProductos');
-  const tableEl = document.getElementById('productosTable');
-  const countEl = document.getElementById('countProductos');
-  const btnConfirmar = document.getElementById('btnConfirmarMovimiento');
-
-  countEl.textContent = currentState.productos.length;
-
-  if (currentState.productos.length === 0) {
-    emptyEl.style.display = 'block';
-    tableEl.style.display = 'none';
-    btnConfirmar.disabled = true;
-    return;
-  }
-
-  emptyEl.style.display = 'none';
-  tableEl.style.display = 'block';
-  btnConfirmar.disabled = false;
+  table.style.display = 'table';
+  emptyMessage.style.display = 'none';
 
   tbody.innerHTML = '';
 
-  currentState.productos.forEach((item, index) => {
+  comprobanteState.lineas.forEach((linea, index) => {
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><strong>${escapeHtml(item.productoData.codigoInterno)}</strong></td>
-      <td>${escapeHtml(item.productoData.name)}</td>
-      <td class="text-center"><strong>${item.cantidad}</strong></td>
-      <td class="text-center">
-        <button class="btn-danger" onclick="eliminarProducto(${index})">
-          Quitar
-        </button>
-      </td>
-    `;
+    row.className = 'detalle-row';
+
+    // Columna de producto
+    const productCell = document.createElement('td');
+    const productSearchDiv = document.createElement('div');
+    productSearchDiv.className = 'product-search-cell';
+
+    const productInput = document.createElement('input');
+    productInput.type = 'text';
+    productInput.className = 'product-search-input';
+    productInput.placeholder = 'Código o barras (ENTER) o 🔍 (F2)';
+    productInput.dataset.lineaId = linea.lineaId;
+    productInput.autocomplete = 'off';
+
+    if (linea.productoData) {
+      productInput.value = linea.productoData.codigoInterno;
+      productInput.disabled = true;
+    }
+
+    // Evento ENTER para buscar por código
+    productInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const code = productInput.value.trim();
+        if (code) {
+          await buscarProductoPorCodigo(linea.lineaId, code);
+        }
+      }
+    });
+
+    const searchBtn = document.createElement('button');
+    searchBtn.type = 'button';
+    searchBtn.className = 'btn-search-icon';
+    searchBtn.innerHTML = '🔍';
+    searchBtn.title = 'Buscar por nombre (F2)';
+    searchBtn.onclick = () => openSearchModal(linea.lineaId);
+
+    productSearchDiv.appendChild(productInput);
+    productSearchDiv.appendChild(searchBtn);
+
+    // Mostrar nombre del producto si está seleccionado
+    if (linea.productoData) {
+      const productNameDiv = document.createElement('div');
+      productNameDiv.className = 'product-name-display';
+      productNameDiv.textContent = linea.productoData.name;
+      productSearchDiv.appendChild(productNameDiv);
+    }
+
+    productCell.appendChild(productSearchDiv);
+
+    // Columna de cantidad
+    const cantidadCell = document.createElement('td');
+    cantidadCell.style.textAlign = 'center';
+
+    const cantidadInput = document.createElement('input');
+    cantidadInput.type = 'number';
+    cantidadInput.className = 'cantidad-input';
+    cantidadInput.min = '1';
+    cantidadInput.value = linea.cantidad;
+    cantidadInput.addEventListener('change', (e) => {
+      const newCantidad = parseInt(e.target.value) || 1;
+      linea.cantidad = Math.max(1, newCantidad);
+      e.target.value = linea.cantidad;
+    });
+
+    cantidadCell.appendChild(cantidadInput);
+
+    // Columna de acciones
+    const actionsCell = document.createElement('td');
+    actionsCell.style.textAlign = 'center';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-remove-line';
+    removeBtn.textContent = '❌ Quitar';
+    removeBtn.onclick = () => eliminarLinea(linea.lineaId);
+
+    actionsCell.appendChild(removeBtn);
+
+    row.appendChild(productCell);
+    row.appendChild(cantidadCell);
+    row.appendChild(actionsCell);
+
     tbody.appendChild(row);
   });
 }
 
-function eliminarProducto(index) {
-  currentState.productos.splice(index, 1);
-  renderProductosAgregados();
+// Eliminar línea
+function eliminarLinea(lineaId) {
+  comprobanteState.lineas = comprobanteState.lineas.filter(l => l.lineaId !== lineaId);
+  renderLineas();
+
+  // Si no quedan líneas, agregar una nueva
+  if (comprobanteState.lineas.length === 0) {
+    agregarLinea();
+  }
 }
 
-async function confirmarMovimiento() {
-  if (currentState.productos.length === 0) {
-    showError('formError', 'Agrega al menos un producto');
+// Buscar producto por código o barras
+async function buscarProductoPorCodigo(lineaId, code) {
+  try {
+    const response = await authenticatedFetch(`${API_URL}/products/search?code=${encodeURIComponent(code)}`);
+    const data = await response.json();
+
+    if (data.success && data.product) {
+      // Verificar si el producto ya está en otra línea
+      const yaExiste = comprobanteState.lineas.some(l =>
+        l.lineaId !== lineaId && l.productoId === data.product._id
+      );
+
+      if (yaExiste) {
+        showError('errorMessage', 'Este producto ya está agregado en otra línea');
+        return;
+      }
+
+      // Obtener stock actual
+      const productWithStock = allProductsCache.find(p => p._id === data.product._id);
+      const stockActual = productWithStock ? productWithStock.stock : 0;
+
+      // Actualizar línea
+      const linea = comprobanteState.lineas.find(l => l.lineaId === lineaId);
+      if (linea) {
+        linea.productoId = data.product._id;
+        linea.productoData = {
+          ...data.product,
+          stock: stockActual
+        };
+        renderLineas();
+        hideMessage('errorMessage');
+
+        // Focus en el campo de cantidad
+        setTimeout(() => {
+          const cantidadInputs = document.querySelectorAll('.cantidad-input');
+          const index = comprobanteState.lineas.findIndex(l => l.lineaId === lineaId);
+          if (cantidadInputs[index]) {
+            cantidadInputs[index].select();
+          }
+        }, 50);
+      }
+    } else {
+      showError('errorMessage', 'Producto no encontrado con ese código');
+    }
+  } catch (error) {
+    console.error('Error al buscar producto:', error);
+    showError('errorMessage', 'Error de conexión al buscar producto');
+  }
+}
+
+// Abrir modal de búsqueda por nombre
+function openSearchModal(lineaId) {
+  currentSearchLineIndex = lineaId;
+
+  const modal = document.getElementById('searchModal');
+  const input = document.getElementById('searchModalInput');
+  const resultsContainer = document.getElementById('searchResultsContainer');
+
+  modal.classList.add('active');
+  input.value = '';
+  resultsContainer.innerHTML = '<div class="search-no-results">Escriba para buscar productos...</div>';
+
+  setTimeout(() => {
+    input.focus();
+  }, 100);
+}
+
+// Cerrar modal de búsqueda
+function closeSearchModal() {
+  const modal = document.getElementById('searchModal');
+  modal.classList.remove('active');
+  currentSearchLineIndex = null;
+}
+
+// Manejar búsqueda en modal
+let searchTimeout;
+function handleModalSearch(e) {
+  clearTimeout(searchTimeout);
+
+  const query = e.target.value.trim();
+  const resultsContainer = document.getElementById('searchResultsContainer');
+
+  if (query.length < 2) {
+    resultsContainer.innerHTML = '<div class="search-no-results">Escriba al menos 2 caracteres...</div>';
     return;
   }
 
-  if (!confirm(`¿Confirmar movimiento de ${currentState.tipo} con ${currentState.productos.length} productos?`)) {
+  searchTimeout = setTimeout(() => {
+    const queryLower = query.toLowerCase();
+    const results = allProductsCache.filter(product => {
+      return product.name.toLowerCase().includes(queryLower) ||
+             product.codigoInterno.toLowerCase().includes(queryLower) ||
+             (product.barcode && product.barcode.toLowerCase().includes(queryLower));
+    }).slice(0, 20);
+
+    if (results.length === 0) {
+      resultsContainer.innerHTML = '<div class="search-no-results">No se encontraron productos</div>';
+      return;
+    }
+
+    resultsContainer.innerHTML = '';
+    results.forEach(product => {
+      const item = document.createElement('div');
+      item.className = 'search-result-item';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'search-result-name';
+      nameDiv.textContent = product.name;
+
+      const codeDiv = document.createElement('div');
+      codeDiv.className = 'search-result-code';
+      codeDiv.textContent = `${product.codigoInterno}${product.barcode ? ' | ' + product.barcode : ''}`;
+
+      item.appendChild(nameDiv);
+      item.appendChild(codeDiv);
+
+      item.onclick = () => selectProductFromModal(product);
+
+      resultsContainer.appendChild(item);
+    });
+  }, 300);
+}
+
+// Seleccionar producto del modal
+function selectProductFromModal(product) {
+  if (currentSearchLineIndex === null) return;
+
+  // Verificar si el producto ya está en otra línea
+  const yaExiste = comprobanteState.lineas.some(l =>
+    l.lineaId !== currentSearchLineIndex && l.productoId === product._id
+  );
+
+  if (yaExiste) {
+    showError('errorMessage', 'Este producto ya está agregado en otra línea');
+    closeSearchModal();
     return;
   }
 
-  const btnConfirmar = document.getElementById('btnConfirmarMovimiento');
+  // Actualizar línea
+  const linea = comprobanteState.lineas.find(l => l.lineaId === currentSearchLineIndex);
+  if (linea) {
+    linea.productoId = product._id;
+    linea.productoData = product;
+    renderLineas();
+    hideMessage('errorMessage');
+  }
+
+  closeSearchModal();
+
+  // Focus en el campo de cantidad
+  setTimeout(() => {
+    const cantidadInputs = document.querySelectorAll('.cantidad-input');
+    const index = comprobanteState.lineas.findIndex(l => l.lineaId === currentSearchLineIndex);
+    if (cantidadInputs[index]) {
+      cantidadInputs[index].select();
+    }
+  }, 50);
+}
+
+// Mapear tipo de movimiento a tipo de backend
+function mapTipoMovimiento(tipoFrontend) {
+  const mapping = {
+    'INGRESO': 'INGRESO',
+    'EGRESO': 'EGRESO',
+    'AJUSTE_POSITIVO': 'INGRESO',
+    'AJUSTE_NEGATIVO': 'EGRESO'
+  };
+  return mapping[tipoFrontend] || 'INGRESO';
+}
+
+// Guardar comprobante
+async function guardarComprobante() {
+  hideMessage('errorMessage');
+  hideMessage('successMessage');
+
+  // Validaciones
+  const tipo = document.getElementById('tipoMovimiento').value;
+  const fecha = document.getElementById('fechaMovimiento').value;
+  const observaciones = document.getElementById('observaciones').value.trim();
+
+  if (!tipo) {
+    showError('errorMessage', 'Debe seleccionar un tipo de movimiento');
+    return;
+  }
+
+  if (!fecha) {
+    showError('errorMessage', 'Debe seleccionar una fecha');
+    return;
+  }
+
+  // Validar que haya al menos una línea con producto
+  const lineasValidas = comprobanteState.lineas.filter(l => l.productoId !== null);
+
+  if (lineasValidas.length === 0) {
+    showError('errorMessage', 'Debe agregar al menos un producto al comprobante');
+    return;
+  }
+
+  // Validar cantidades
+  const cantidadInvalida = lineasValidas.find(l => !l.cantidad || l.cantidad <= 0);
+  if (cantidadInvalida) {
+    showError('errorMessage', 'Todas las cantidades deben ser mayores a 0');
+    return;
+  }
+
+  // Validar stock para egresos y ajustes negativos
+  const tipoBackend = mapTipoMovimiento(tipo);
+  if (tipoBackend === 'EGRESO') {
+    for (const linea of lineasValidas) {
+      const stockActual = linea.productoData.stock || 0;
+      if (linea.cantidad > stockActual) {
+        showError('errorMessage', `Stock insuficiente para "${linea.productoData.name}". Disponible: ${stockActual}, solicitado: ${linea.cantidad}`);
+        return;
+      }
+    }
+  }
+
+  if (!confirm(`¿Confirmar comprobante de ${tipo} con ${lineasValidas.length} producto(s)?`)) {
+    return;
+  }
+
+  const btnGuardar = document.getElementById('btnGuardar');
+  btnGuardar.disabled = true;
+  btnGuardar.textContent = 'Guardando...';
 
   try {
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = 'Guardando...';
-    hideAllMessages();
+    // Obtener próximo comprobante
+    const comprobanteResponse = await authenticatedFetch(`${API_URL}/stock-movements/next-comprobante`);
+    const comprobanteData = await comprobanteResponse.json();
 
+    if (!comprobanteData.success) {
+      throw new Error('Error al generar comprobante');
+    }
+
+    // Preparar payload
     const payload = {
-      comprobante: currentState.comprobante,
-      tipo: currentState.tipo,
-      observacion: currentState.observacion,
-      productos: currentState.productos.map(p => ({
-        productoId: p.productoId,
-        cantidad: p.cantidad
+      comprobante: comprobanteData.comprobante,
+      tipo: tipoBackend,
+      observacion: observaciones || `${tipo} - ${fecha}`,
+      productos: lineasValidas.map(l => ({
+        productoId: l.productoId,
+        cantidad: l.cantidad
       }))
     };
 
+    // Enviar al backend
     const response = await authenticatedFetch(`${API_URL}/stock-movements`, {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -384,49 +471,87 @@ async function confirmarMovimiento() {
     const data = await response.json();
 
     if (data.success) {
-      showSuccess('formSuccess', `Movimiento registrado exitosamente. Comprobante: ${data.comprobante}`);
+      showSuccess('successMessage', `✓ Comprobante ${data.comprobante} guardado exitosamente con ${data.movements.length} producto(s)`);
 
       setTimeout(() => {
-        if (confirm('Movimiento registrado. ¿Deseas registrar otro movimiento?')) {
-          resetearFormulario();
+        if (confirm('¿Desea cargar otro comprobante?')) {
+          resetForm();
         } else {
           window.location.href = 'stock-movements.html';
         }
       }, 2000);
     } else {
       if (data.errors && data.errors.length > 0) {
-        showError('formError', data.message + ':\n- ' + data.errors.join('\n- '));
+        showError('errorMessage', data.message + ':\n' + data.errors.join('\n'));
       } else {
-        showError('formError', data.message || 'Error al registrar movimiento');
+        showError('errorMessage', data.message || 'Error al guardar el comprobante');
       }
-      btnConfirmar.disabled = false;
-      btnConfirmar.textContent = 'Confirmar Movimiento';
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = '💾 Guardar Comprobante';
     }
   } catch (error) {
-    console.error('Error:', error);
-    showError('formError', 'Error de conexión con el servidor');
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = 'Confirmar Movimiento';
+    console.error('Error al guardar comprobante:', error);
+    showError('errorMessage', 'Error de conexión con el servidor');
+    btnGuardar.disabled = false;
+    btnGuardar.textContent = '💾 Guardar Comprobante';
   }
 }
 
-function resetearFormulario() {
-  currentState = {
-    step: 1,
-    tipo: null,
-    comprobante: null,
-    observacion: '',
-    productos: [],
-    productoBuscado: null
+// Cancelar comprobante
+function cancelarComprobante() {
+  if (comprobanteState.lineas.some(l => l.productoId !== null)) {
+    if (!confirm('¿Está seguro de cancelar? Se perderán todos los datos ingresados.')) {
+      return;
+    }
+  }
+
+  resetForm();
+}
+
+// Resetear formulario
+function resetForm() {
+  document.getElementById('tipoMovimiento').value = '';
+  document.getElementById('observaciones').value = '';
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fechaMovimiento').value = today;
+
+  comprobanteState = {
+    lineas: [],
+    nextLineaId: 1
   };
 
-  document.getElementById('tipo').value = '';
-  document.getElementById('observacion').value = '';
-  document.getElementById('comprobanteDisplay').textContent = '-';
-  document.getElementById('btnGenerarComprobante').disabled = true;
+  hideMessage('errorMessage');
+  hideMessage('successMessage');
 
-  document.getElementById('step1').style.display = 'block';
-  document.getElementById('step2').style.display = 'none';
+  agregarLinea();
 
-  hideAllMessages();
+  document.getElementById('btnGuardar').disabled = false;
+  document.getElementById('btnGuardar').textContent = '💾 Guardar Comprobante';
+}
+
+// Funciones de UI
+function showError(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function showSuccess(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = message;
+    element.style.display = 'block';
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function hideMessage(elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.style.display = 'none';
+  }
 }

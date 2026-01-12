@@ -5,6 +5,283 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registrar Movimiento - Sistema de Stock</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Estilos específicos para el formulario estilo ERP */
+    .comprobante-form {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .comprobante-header {
+      display: grid;
+      grid-template-columns: 200px 180px 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .detalle-section {
+      margin-top: 24px;
+    }
+
+    .detalle-section h3 {
+      margin-bottom: 12px;
+      color: #333;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .detalle-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .detalle-table thead {
+      background: #f5f5f5;
+    }
+
+    .detalle-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .detalle-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+
+    .detalle-row {
+      transition: background-color 0.2s;
+    }
+
+    .detalle-row:hover {
+      background-color: #f9f9f9;
+    }
+
+    .product-search-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .product-search-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .product-search-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+
+    .btn-search-icon {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    .btn-search-icon:hover {
+      background: #1976D2;
+    }
+
+    .product-name-display {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .cantidad-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .btn-remove-line {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .btn-remove-line:hover {
+      background: #d32f2f;
+    }
+
+    .btn-add-line {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-add-line:hover {
+      background: #45a049;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    /* Modal de búsqueda */
+    .search-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-modal.active {
+      display: flex;
+    }
+
+    .search-modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .search-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .search-modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .search-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-modal-close:hover {
+      color: #333;
+    }
+
+    .search-modal-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .search-modal-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    .search-results-container {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+
+    .search-result-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+      background: #f5f5f5;
+    }
+
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-result-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .search-result-code {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .search-no-results {
+      padding: 40px;
+      text-align: center;
+      color: #999;
+    }
+
+    .empty-detalle {
+      padding: 40px;
+      text-align: center;
+      color: #999;
+      font-style: italic;
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard">
@@ -52,143 +329,105 @@
       <!-- Contenido principal -->
       <main class="main-content">
         <div class="page-header">
-          <h2>Registrar Movimiento de Stock</h2>
-          <p>Registrar ingreso o egreso de múltiples productos</p>
+          <h2>Nuevo Comprobante</h2>
+          <p>Carga rápida de movimientos de stock</p>
         </div>
 
-        <!-- Paso 1: Seleccionar tipo y generar comprobante -->
-        <div id="step1" class="form-card">
-          <h3>Paso 1: Tipo de Movimiento</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="tipo">Tipo de Movimiento *</label>
-              <select id="tipo" class="form-select" required>
+        <div class="comprobante-form">
+          <!-- Cabecera del comprobante -->
+          <div class="comprobante-header">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tipoMovimiento">Tipo de Movimiento *</label>
+              <select id="tipoMovimiento" class="form-select" required>
                 <option value="">Seleccionar...</option>
-                <option value="INGRESO">INGRESO (Entrada de stock)</option>
-                <option value="EGRESO">EGRESO (Salida de stock)</option>
+                <option value="INGRESO">Ingreso</option>
+                <option value="EGRESO">Egreso</option>
+                <option value="AJUSTE_POSITIVO">Ajuste + (AC+)</option>
+                <option value="AJUSTE_NEGATIVO">Ajuste - (AC-)</option>
               </select>
             </div>
 
-            <div class="form-group">
-              <label>Comprobante</label>
-              <div class="comprobante-display" id="comprobanteDisplay">-</div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="fechaMovimiento">Fecha *</label>
+              <input type="date" id="fechaMovimiento" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="observaciones">Observaciones</label>
+              <input
+                type="text"
+                id="observaciones"
+                placeholder="Ej: Proveedor, motivo, etc."
+                autocomplete="off"
+              >
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="observacion">Observación General (Opcional)</label>
-            <textarea
-              id="observacion"
-              rows="3"
-              placeholder="Motivo del movimiento, proveedor, cliente, etc."
-            ></textarea>
-          </div>
+          <!-- Detalle (Líneas de productos) -->
+          <div class="detalle-section">
+            <h3>Detalle del Comprobante</h3>
 
-          <button id="btnGenerarComprobante" class="btn-primary" disabled>
-            Generar Comprobante y Continuar
-          </button>
-        </div>
-
-        <!-- Paso 2: Agregar productos -->
-        <div id="step2" class="form-card" style="display: none;">
-          <div class="step-header">
-            <h3>Paso 2: Agregar Productos</h3>
-            <div class="comprobante-info">
-              <strong>Comprobante:</strong> <span id="comprobanteActual">-</span> |
-              <strong>Tipo:</strong> <span id="tipoActual" class="badge">-</span>
-            </div>
-          </div>
-
-          <!-- Formulario para agregar producto -->
-          <div class="add-product-form">
-            <h4>Buscar y Agregar Producto</h4>
-
-            <div class="form-row">
-              <div class="form-group" style="position: relative; flex: 2;">
-                <label for="productSearch">Buscar Producto</label>
-                <div class="search-input-wrapper">
-                  <input
-                    type="text"
-                    id="productSearch"
-                    placeholder="Escribe código o nombre del producto..."
-                    autocomplete="off"
-                  >
-                  <span class="search-icon">🔍</span>
-                </div>
-                <small>Busca por código interno, código de barras o nombre</small>
-
-                <!-- Dropdown de resultados -->
-                <div id="searchDropdown" class="search-dropdown" style="display: none;">
-                  <div id="searchResults"></div>
-                </div>
-              </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="cantidad">Cantidad</label>
-                <input
-                  type="number"
-                  id="cantidad"
-                  placeholder="0"
-                  min="1"
-                  value="1"
-                >
-              </div>
-
-              <div class="form-group" style="display: flex; align-items: flex-end;">
-                <button id="btnAgregarProducto" class="btn-secondary" type="button" disabled>
-                  + Agregar
-                </button>
-              </div>
+            <div id="emptyDetalle" class="empty-detalle">
+              No hay líneas agregadas. Haga click en "+ Agregar línea" para comenzar.
             </div>
 
-            <!-- Info del producto encontrado -->
-            <div id="productFoundInfo" class="product-found-info" style="display: none;">
-              <span><strong>Producto:</strong> <span id="foundProductName">-</span></span>
-              <span><strong>Stock actual:</strong> <span id="foundProductStock">0</span></span>
-            </div>
-          </div>
+            <table id="detalleTable" class="detalle-table" style="display: none;">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Producto (Código/Barras) 🔍</th>
+                  <th style="width: 15%; text-align: center;">Cantidad</th>
+                  <th style="width: 10%; text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="detalleTableBody">
+                <!-- Las líneas se agregan dinámicamente -->
+              </tbody>
+            </table>
 
-          <div id="errorAgregarProducto" class="error-message"></div>
-
-          <!-- Lista de productos agregados -->
-          <div class="productos-agregados">
-            <h4>Productos en este Movimiento (<span id="countProductos">0</span>)</h4>
-
-            <div id="emptyProductos" class="empty-message-small">
-              No hay productos agregados. Busca y agrega productos usando el formulario de arriba.
-            </div>
-
-            <div id="productosTable" class="table-responsive" style="display: none;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Código Interno</th>
-                    <th>Nombre</th>
-                    <th>Cantidad</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="productosTableBody">
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div id="formError" class="error-message"></div>
-          <div id="formSuccess" class="success-message"></div>
-
-          <div class="form-actions">
-            <button id="btnConfirmarMovimiento" class="btn-primary" disabled>
-              Confirmar Movimiento
+            <button type="button" id="btnAgregarLinea" class="btn-add-line">
+              + Agregar línea
             </button>
-            <button id="btnCancelar" class="btn-secondary">
+          </div>
+
+          <!-- Mensajes de error/éxito -->
+          <div id="errorMessage" class="error-message" style="display: none; margin-top: 16px;"></div>
+          <div id="successMessage" class="success-message" style="display: none; margin-top: 16px;"></div>
+
+          <!-- Acciones -->
+          <div class="form-actions">
+            <button type="button" id="btnCancelar" class="btn-secondary">
               Cancelar
+            </button>
+            <button type="button" id="btnGuardar" class="btn-primary">
+              💾 Guardar Comprobante
             </button>
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Modal de búsqueda por nombre -->
+  <div id="searchModal" class="search-modal">
+    <div class="search-modal-content">
+      <div class="search-modal-header">
+        <h3>Buscar Producto por Nombre</h3>
+        <button class="search-modal-close" onclick="closeSearchModal()">&times;</button>
+      </div>
+
+      <input
+        type="text"
+        id="searchModalInput"
+        class="search-modal-input"
+        placeholder="Escriba el nombre del producto..."
+        autocomplete="off"
+      >
+
+      <div class="search-results-container" id="searchResultsContainer">
+        <div class="search-no-results">
+          Escriba para buscar productos...
+        </div>
+      </div>
     </div>
   </div>
 
