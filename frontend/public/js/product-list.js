@@ -104,18 +104,23 @@ function applyFilters() {
     return true;
   });
 
+  // Ordenar por código interno ascendente
+  filtered.sort((a, b) => a.codigoInterno.localeCompare(b.codigoInterno));
+
   // Renderizar productos filtrados con paginación
   renderProducts(filtered);
   renderPagination(filtered.length);
 
-  // Actualizar contador
+  // Actualizar contador (mostrar cuántos se ven en la página actual)
   const totalEl = document.getElementById('totalProducts');
   const filteredInfoEl = document.getElementById('filteredInfo');
 
-  totalEl.textContent = filtered.length;
+  const start = (currentPage - 1) * productsPerPage;
+  const end = Math.min(start + productsPerPage, filtered.length);
+  totalEl.textContent = `${start + 1}-${end} de ${filtered.length}`;
 
   if (filtered.length < allProducts.length) {
-    filteredInfoEl.textContent = `(de ${allProducts.length} totales)`;
+    filteredInfoEl.textContent = `(filtrados de ${allProducts.length} totales)`;
   } else {
     filteredInfoEl.textContent = '';
   }
