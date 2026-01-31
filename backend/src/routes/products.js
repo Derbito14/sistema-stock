@@ -16,6 +16,9 @@ router.post('/', async (req, res) => {
   try {
     const { barcode, name, price, minStock, familia, unidad } = req.body;
 
+    // Limpiar barcode: convertir vacío/null a undefined
+    const cleanBarcode = (barcode && barcode.trim() !== '') ? barcode.trim() : undefined;
+
     // Validar campos requeridos
     if (!name) {
       return res.status(400).json({
@@ -25,8 +28,8 @@ router.post('/', async (req, res) => {
     }
 
     // Verificar si el código de barras ya existe (si se proporcionó)
-    if (barcode) {
-      const existingProduct = await Product.findOne({ barcode });
+    if (cleanBarcode) {
+      const existingProduct = await Product.findOne({ barcode: cleanBarcode });
       if (existingProduct) {
         return res.status(400).json({
           success: false,
@@ -36,14 +39,21 @@ router.post('/', async (req, res) => {
     }
 
     // Crear el producto (codigoInterno se genera automáticamente)
-    const product = await Product.create({
-      barcode: barcode || undefined,
+    // NO incluir barcode si está vacío (para que sparse index funcione)
+    const productData = {
       name,
       price: price || 0,
       minStock: minStock || 0,
       familia: familia || null,
       unidad: unidad || 'unidad'
-    });
+    };
+
+    // Solo agregar barcode si tiene valor
+    if (cleanBarcode) {
+      productData.barcode = cleanBarcode;
+    }
+
+    const product = await Product.create(productData);
 
     res.status(201).json({
       success: true,
@@ -157,6 +167,9 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { name, price, minStock, barcode, familia, unidad } = req.body;
 
+    // Limpiar barcode: convertir vacío/null a undefined
+    const cleanBarcode = (barcode && barcode.trim() !== '') ? barcode.trim() : undefined;
+
     // Buscar el producto
     const product = await Product.findById(id);
 
@@ -176,9 +189,9 @@ router.put('/:id', async (req, res) => {
     }
 
     // Verificar si el código de barras ya existe en otro producto
-    if (barcode && barcode !== product.barcode) {
+    if (cleanBarcode && cleanBarcode !== product.barcode) {
       const existingProduct = await Product.findOne({
-        barcode,
+        barcode: cleanBarcode,
         _id: { $ne: id }
       });
 
@@ -194,10 +207,16 @@ router.put('/:id', async (req, res) => {
     product.name = name;
     product.price = price !== undefined ? price : product.price;
     product.minStock = minStock !== undefined ? minStock : product.minStock;
-    product.barcode = barcode || undefined;
     product.familia = familia !== undefined ? (familia || null) : product.familia;
     product.unidad = unidad || product.unidad;
     product.updatedAt = Date.now();
+
+    // Manejar barcode: si está vacío, eliminarlo del documento
+    if (cleanBarcode) {
+      product.barcode = cleanBarcode;
+    } else {
+      product.barcode = undefined;
+    }
 
     await product.save();
 
