@@ -14,7 +14,7 @@ router.use(protect);
 // @access  Private
 router.post('/', async (req, res) => {
   try {
-    const { barcode, name, price, minStock } = req.body;
+    const { barcode, name, price, minStock, familia, unidad } = req.body;
 
     // Validar campos requeridos
     if (!name) {
@@ -40,7 +40,9 @@ router.post('/', async (req, res) => {
       barcode: barcode || undefined,
       name,
       price: price || 0,
-      minStock: minStock || 0
+      minStock: minStock || 0,
+      familia: familia || null,
+      unidad: unidad || 'unidad'
     });
 
     res.status(201).json({
@@ -72,8 +74,10 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    // Obtener todos los productos activos
-    const products = await Product.find({ activo: true }).sort({ createdAt: -1 });
+    // Obtener todos los productos activos con su familia
+    const products = await Product.find({ activo: true })
+      .populate('familia', 'nombre')
+      .sort({ createdAt: -1 });
 
     // Calcular stock para todos los productos
     const productIds = products.map(p => p._id);
@@ -151,7 +155,7 @@ router.get('/search', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, minStock, barcode } = req.body;
+    const { name, price, minStock, barcode, familia, unidad } = req.body;
 
     // Buscar el producto
     const product = await Product.findById(id);
@@ -191,6 +195,8 @@ router.put('/:id', async (req, res) => {
     product.price = price !== undefined ? price : product.price;
     product.minStock = minStock !== undefined ? minStock : product.minStock;
     product.barcode = barcode || undefined;
+    product.familia = familia !== undefined ? (familia || null) : product.familia;
+    product.unidad = unidad || product.unidad;
     product.updatedAt = Date.now();
 
     await product.save();

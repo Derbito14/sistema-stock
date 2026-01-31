@@ -1,7 +1,34 @@
 // Configurar formulario al cargar
 document.addEventListener('DOMContentLoaded', () => {
+  loadFamilies();
   setupProductForm();
 });
+
+// Cargar familias en el select
+async function loadFamilies() {
+  const select = document.getElementById('familia');
+
+  try {
+    const response = await authenticatedFetch(`${API_URL}/families`);
+    const data = await response.json();
+
+    if (data.success && data.families.length > 0) {
+      data.families.forEach(family => {
+        const option = document.createElement('option');
+        option.value = family._id;
+        option.textContent = family.nombre;
+        select.appendChild(option);
+      });
+    } else {
+      // Si no hay familias, mostrar mensaje
+      select.innerHTML = '<option value="">-- Primero cree una familia --</option>';
+      showError('formError', 'No hay familias creadas. Debe crear al menos una familia antes de agregar productos.');
+    }
+  } catch (error) {
+    console.error('Error al cargar familias:', error);
+    select.innerHTML = '<option value="">Error al cargar familias</option>';
+  }
+}
 
 function setupProductForm() {
   const form = document.getElementById('productForm');
@@ -16,12 +43,19 @@ async function handleSubmit() {
   const submitBtn = document.getElementById('submitBtn');
   const barcode = document.getElementById('barcode').value.trim();
   const name = document.getElementById('name').value.trim();
+  const familia = document.getElementById('familia').value;
+  const unidad = document.getElementById('unidad').value;
   const price = parseFloat(document.getElementById('price').value) || 0;
   const minStock = parseInt(document.getElementById('minStock').value) || 0;
 
   // Validación básica
   if (!name) {
     showError('formError', 'El nombre del producto es obligatorio');
+    return;
+  }
+
+  if (!familia) {
+    showError('formError', 'Debe seleccionar una familia para el producto');
     return;
   }
 
@@ -35,6 +69,8 @@ async function handleSubmit() {
       body: JSON.stringify({
         barcode: barcode || undefined,
         name,
+        familia,
+        unidad,
         price,
         minStock
       })
@@ -47,6 +83,8 @@ async function handleSubmit() {
 
       // Limpiar formulario
       document.getElementById('productForm').reset();
+      // Volver a poner el valor por defecto de unidad
+      document.getElementById('unidad').value = 'unidad';
 
       // Ocultar mensaje después de 5 segundos
       setTimeout(() => {

@@ -10,6 +10,22 @@ let allProductsCache = [];
 // Índice de línea actual para el modal de búsqueda
 let currentSearchLineIndex = null;
 
+// Formatear stock según unidad
+function formatStock(stock, unidad) {
+  if (unidad === 'gramos') {
+    if (stock >= 1000) {
+      return `${(stock / 1000).toFixed(3)} kg`;
+    }
+    return `${stock} gr`;
+  }
+  return stock.toString();
+}
+
+// Obtener label de unidad corto
+function getUnidadShort(unidad) {
+  return unidad === 'gramos' ? 'gr' : 'un';
+}
+
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
   initializeForm();
@@ -163,7 +179,9 @@ function renderLineas() {
     if (linea.productoData) {
       const productNameDiv = document.createElement('div');
       productNameDiv.className = 'product-name-display';
-      productNameDiv.textContent = linea.productoData.name;
+      const unidadLabel = linea.productoData.unidad === 'gramos' ? ' (Gramos)' : ' (Unidad)';
+      const stockLabel = formatStock(linea.productoData.stock || 0, linea.productoData.unidad);
+      productNameDiv.textContent = `${linea.productoData.name}${unidadLabel} - Stock: ${stockLabel}`;
       productSearchDiv.appendChild(productNameDiv);
     }
 
@@ -178,6 +196,13 @@ function renderLineas() {
     cantidadInput.className = 'cantidad-input';
     cantidadInput.min = '1';
     cantidadInput.value = linea.cantidad;
+
+    // Si es producto en gramos, mostrar placeholder
+    if (linea.productoData && linea.productoData.unidad === 'gramos') {
+      cantidadInput.placeholder = 'gr';
+      cantidadInput.title = 'Cantidad en gramos';
+    }
+
     cantidadInput.addEventListener('change', (e) => {
       const newCantidad = parseInt(e.target.value) || 1;
       linea.cantidad = Math.max(1, newCantidad);
@@ -428,7 +453,9 @@ async function guardarComprobante() {
     for (const linea of lineasValidas) {
       const stockActual = linea.productoData.stock || 0;
       if (linea.cantidad > stockActual) {
-        showError('errorMessage', `Stock insuficiente para "${linea.productoData.name}". Disponible: ${stockActual}, solicitado: ${linea.cantidad}`);
+        const stockFormatted = formatStock(stockActual, linea.productoData.unidad);
+        const cantidadFormatted = formatStock(linea.cantidad, linea.productoData.unidad);
+        showError('errorMessage', `Stock insuficiente para "${linea.productoData.name}". Disponible: ${stockFormatted}, solicitado: ${cantidadFormatted}`);
         return;
       }
     }

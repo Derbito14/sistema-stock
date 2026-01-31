@@ -30,6 +30,10 @@
             <span class="sidebar-icon">🏠</span>
             <span>Inicio</span>
           </a>
+          <a href="family-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📁</span>
+            <span>Familias</span>
+          </a>
           <a href="product-form.html" class="sidebar-link active">
             <span class="sidebar-icon">📦</span>
             <span>Alta de Productos</span>
@@ -81,6 +85,25 @@
                   required
                   autocomplete="off"
                 >
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="familia">Familia *</label>
+                <select id="familia" name="familia" class="form-select" required>
+                  <option value="">Seleccionar familia...</option>
+                </select>
+                <small>Categoría del producto (Fiambres, Carnes, etc.)</small>
+              </div>
+
+              <div class="form-group">
+                <label for="unidad">Unidad de Medida *</label>
+                <select id="unidad" name="unidad" class="form-select" required>
+                  <option value="unidad">Unidad</option>
+                  <option value="gramos">Gramos (Kg)</option>
+                </select>
+                <small>Para productos pesables elegir Gramos</small>
               </div>
             </div>
 

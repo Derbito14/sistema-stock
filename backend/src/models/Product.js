@@ -18,6 +18,16 @@ const productSchema = new mongoose.Schema({
     required: [true, 'El nombre del producto es requerido'],
     trim: true
   },
+  familia: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Family',
+    default: null
+  },
+  unidad: {
+    type: String,
+    enum: ['unidad', 'gramos'],
+    default: 'unidad'
+  },
   price: {
     type: Number,
     required: [true, 'El precio es requerido'],

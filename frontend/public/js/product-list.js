@@ -1,5 +1,6 @@
 // Cache de todos los productos
 let allProducts = [];
+let allFamilies = [];
 
 // Paginación
 let currentPage = 1;
@@ -7,11 +8,58 @@ const productsPerPage = 10;
 
 // Cargar productos al iniciar
 document.addEventListener('DOMContentLoaded', () => {
+  loadFamilies();
   loadProducts();
   setupRefreshButton();
   setupEditForm();
   setupFilters();
 });
+
+// Cargar familias para el modal de edición
+async function loadFamilies() {
+  try {
+    const response = await authenticatedFetch(`${API_URL}/families`);
+    const data = await response.json();
+
+    if (data.success) {
+      allFamilies = data.families;
+      updateFamilySelect();
+    }
+  } catch (error) {
+    console.error('Error al cargar familias:', error);
+  }
+}
+
+function updateFamilySelect() {
+  const select = document.getElementById('editFamilia');
+  if (!select) return;
+
+  // Mantener la primera opción
+  select.innerHTML = '<option value="">Seleccionar familia...</option>';
+
+  allFamilies.forEach(family => {
+    const option = document.createElement('option');
+    option.value = family._id;
+    option.textContent = family.nombre;
+    select.appendChild(option);
+  });
+}
+
+// Formatear stock según unidad
+function formatStock(stock, unidad) {
+  if (unidad === 'gramos') {
+    if (stock >= 1000) {
+      return `${(stock / 1000).toFixed(3)} kg`;
+    }
+    return `${stock} gr`;
+  }
+  return stock.toString();
+}
+
+// Obtener nombre de unidad para mostrar
+function getUnidadLabel(unidad) {
+  return unidad === 'gramos' ? 'Gramos' : 'Unidad';
+}
 
 function setupRefreshButton() {
   const refreshBtn = document.getElementById('refreshBtn');
@@ -205,17 +253,23 @@ function renderProducts(products) {
   pageProducts.forEach(product => {
     const isLowStock = product.stock <= product.minStock;
     const stockStatus = isLowStock ? 'danger' : 'success';
+    const familiaName = product.familia ? product.familia.nombre : 'Sin familia';
+    const unidadLabel = getUnidadLabel(product.unidad);
+    const stockFormatted = formatStock(product.stock || 0, product.unidad);
+    const minStockFormatted = formatStock(product.minStock || 0, product.unidad);
 
     const row = document.createElement('tr');
     row.innerHTML = `
       <td><strong>${escapeHtml(product.codigoInterno)}</strong></td>
       <td>${product.barcode ? escapeHtml(product.barcode) : '<em>Sin código</em>'}</td>
       <td>${escapeHtml(product.name)}</td>
+      <td>${escapeHtml(familiaName)}</td>
+      <td>${unidadLabel}</td>
       <td>$${formatPrice(product.price)}</td>
       <td class="text-center">
-        <span class="badge badge-${stockStatus}">${product.stock || 0}</span>
+        <span class="badge badge-${stockStatus}">${stockFormatted}</span>
       </td>
-      <td class="text-center">${product.minStock || 0}</td>
+      <td class="text-center">${minStockFormatted}</td>
       <td class="text-center">
         ${isLowStock ? '<span class="badge badge-warning">Stock Bajo</span>' : '<span class="badge badge-success">OK</span>'}
       </td>
@@ -363,10 +417,12 @@ function fillEditForm(product) {
   document.getElementById('editProductId').value = product._id;
   document.getElementById('editCodigoInterno').value = product.codigoInterno;
   document.getElementById('editName').value = product.name;
+  document.getElementById('editFamilia').value = product.familia ? (product.familia._id || product.familia) : '';
+  document.getElementById('editUnidad').value = product.unidad || 'unidad';
   document.getElementById('editPrice').value = product.price;
   document.getElementById('editMinStock').value = product.minStock;
   document.getElementById('editBarcode').value = product.barcode || '';
-  document.getElementById('editStock').value = product.stock || 0;
+  document.getElementById('editStock').value = formatStock(product.stock || 0, product.unidad);
 }
 
 async function handleEditSubmit(e) {
@@ -374,6 +430,8 @@ async function handleEditSubmit(e) {
 
   const productId = document.getElementById('editProductId').value;
   const name = document.getElementById('editName').value.trim();
+  const familia = document.getElementById('editFamilia').value;
+  const unidad = document.getElementById('editUnidad').value;
   const price = parseFloat(document.getElementById('editPrice').value);
   const minStock = parseInt(document.getElementById('editMinStock').value);
   const barcode = document.getElementById('editBarcode').value.trim();
@@ -415,6 +473,8 @@ async function handleEditSubmit(e) {
       },
       body: JSON.stringify({
         name,
+        familia: familia || null,
+        unidad,
         price,
         minStock,
         barcode: barcode || undefined

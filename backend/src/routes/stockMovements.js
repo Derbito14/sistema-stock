@@ -142,7 +142,7 @@ router.post('/', async (req, res) => {
     const populatedMovements = await StockMovement.find({
       _id: { $in: movements.map(m => m._id) }
     })
-    .populate('producto', 'codigoInterno barcode name')
+    .populate('producto', 'codigoInterno barcode name unidad')
     .populate('usuario', 'username');
 
     res.status(201).json({
@@ -234,7 +234,7 @@ router.get('/', async (req, res) => {
     query.producto = { ...query.producto, $ne: null };
 
     const movements = await StockMovement.find(query)
-      .populate('producto', 'codigoInterno barcode name price')
+      .populate('producto', 'codigoInterno barcode name price unidad')
       .populate('usuario', 'username')
       .sort({ fecha: -1, comprobante: -1 })
       .limit(parseInt(limit));
@@ -265,7 +265,7 @@ router.get('/by-comprobante/:comprobante', async (req, res) => {
     const { comprobante } = req.params;
 
     const movements = await StockMovement.find({ comprobante })
-      .populate('producto', 'codigoInterno barcode name price')
+      .populate('producto', 'codigoInterno barcode name price unidad')
       .populate('usuario', 'username')
       .sort({ createdAt: 1 });
 

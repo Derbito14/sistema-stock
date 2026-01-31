@@ -1,3 +1,14 @@
+// Formatear stock según unidad
+function formatStock(stock, unidad) {
+  if (unidad === 'gramos') {
+    if (stock >= 1000) {
+      return `${(stock / 1000).toFixed(3)} kg`;
+    }
+    return `${stock} gr`;
+  }
+  return stock.toString();
+}
+
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', () => {
   // Establecer fechas por defecto (hoy)
@@ -101,7 +112,11 @@ function renderMovements(movements) {
     const codigoInterno = movement.producto?.codigoInterno || 'N/A';
     const nombreProducto = movement.producto?.name || '(Producto eliminado)';
     const precio = movement.producto?.price || 0;
+    const unidad = movement.producto?.unidad || 'unidad';
     const isDeleted = !movement.producto;
+
+    // Formatear cantidad según unidad
+    const cantidadFormatted = formatStock(movement.cantidad, unidad);
 
     // Tipo con badge - usar tipoOriginal si existe, sino usar tipo
     const tipoDisplay = movement.tipoOriginal || movement.tipo;
@@ -118,7 +133,7 @@ function renderMovements(movements) {
     row.innerHTML = `
       <td><strong>${escapeHtml(codigoInterno)}</strong></td>
       <td>${escapeHtml(nombreProducto)}</td>
-      <td class="text-center"><strong>${movement.cantidad}</strong></td>
+      <td class="text-center"><strong>${cantidadFormatted}</strong></td>
       <td class="text-right">${precioFormatted}</td>
       <td>${escapeHtml(movement.comprobante)}</td>
       <td><span class="badge tipo-${tipoClass}">${tipoFormatted}</span></td>
