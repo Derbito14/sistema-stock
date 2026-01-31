@@ -11,7 +11,8 @@ const productSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true, // Permite múltiples valores null
-    trim: true
+    trim: true,
+    set: v => (!v || v.trim() === '') ? undefined : v // Convertir vacío a undefined
   },
   name: {
     type: String,
@@ -89,9 +90,13 @@ productSchema.pre('validate', async function(next) {
   next();
 });
 
-// Actualizar updatedAt antes de guardar
+// Actualizar updatedAt antes de guardar y limpiar barcode vacío
 productSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
+  // Asegurar que barcode vacío sea undefined (para que sparse funcione)
+  if (this.barcode === '' || this.barcode === null) {
+    this.barcode = undefined;
+  }
   next();
 });
 

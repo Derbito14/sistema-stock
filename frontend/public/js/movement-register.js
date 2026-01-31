@@ -209,6 +209,18 @@ function renderLineas() {
       e.target.value = linea.cantidad;
     });
 
+    // ENTER en cantidad agrega nueva línea
+    cantidadInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // Actualizar cantidad
+        const newCantidad = parseInt(cantidadInput.value) || 1;
+        linea.cantidad = Math.max(1, newCantidad);
+        // Agregar nueva línea
+        agregarLinea();
+      }
+    });
+
     cantidadCell.appendChild(cantidadInput);
 
     // Columna de acciones

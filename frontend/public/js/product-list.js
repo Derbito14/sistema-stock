@@ -35,7 +35,7 @@ function updateFamilySelect() {
   if (!select) return;
 
   // Mantener la primera opción
-  select.innerHTML = '<option value="">Seleccionar familia...</option>';
+  select.innerHTML = '<option value="">Sin familia</option>';
 
   allFamilies.forEach(family => {
     const option = document.createElement('option');

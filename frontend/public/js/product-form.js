@@ -19,11 +19,8 @@ async function loadFamilies() {
         option.textContent = family.nombre;
         select.appendChild(option);
       });
-    } else {
-      // Si no hay familias, mostrar mensaje
-      select.innerHTML = '<option value="">-- Primero cree una familia --</option>';
-      showError('formError', 'No hay familias creadas. Debe crear al menos una familia antes de agregar productos.');
     }
+    // Si no hay familias, queda "Sin familia" como única opción (está ok)
   } catch (error) {
     console.error('Error al cargar familias:', error);
     select.innerHTML = '<option value="">Error al cargar familias</option>';
@@ -54,11 +51,6 @@ async function handleSubmit() {
     return;
   }
 
-  if (!familia) {
-    showError('formError', 'Debe seleccionar una familia para el producto');
-    return;
-  }
-
   try {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Guardando...';
@@ -69,7 +61,7 @@ async function handleSubmit() {
       body: JSON.stringify({
         barcode: barcode || undefined,
         name,
-        familia,
+        familia: familia || undefined,
         unidad,
         price,
         minStock
