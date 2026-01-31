@@ -1,10 +1,7 @@
 // Formatear stock según unidad
 function formatStock(stock, unidad) {
-  if (unidad === 'gramos') {
-    if (stock >= 1000) {
-      return `${(stock / 1000).toFixed(3)} kg`;
-    }
-    return `${stock} gr`;
+  if (unidad === 'kg') {
+    return `${Number(stock).toFixed(3)} kg`;
   }
   return stock.toString();
 }

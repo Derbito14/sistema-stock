@@ -47,18 +47,15 @@ function updateFamilySelect() {
 
 // Formatear stock según unidad
 function formatStock(stock, unidad) {
-  if (unidad === 'gramos') {
-    if (stock >= 1000) {
-      return `${(stock / 1000).toFixed(3)} kg`;
-    }
-    return `${stock} gr`;
+  if (unidad === 'kg') {
+    return `${Number(stock).toFixed(3)} kg`;
   }
   return stock.toString();
 }
 
 // Obtener nombre de unidad para mostrar
 function getUnidadLabel(unidad) {
-  return unidad === 'gramos' ? 'Gramos' : 'Unidad';
+  return unidad === 'kg' ? 'Kg' : 'Unidad';
 }
 
 function setupRefreshButton() {

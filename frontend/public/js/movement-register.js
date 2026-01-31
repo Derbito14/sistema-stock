@@ -12,18 +12,15 @@ let currentSearchLineIndex = null;
 
 // Formatear stock según unidad
 function formatStock(stock, unidad) {
-  if (unidad === 'gramos') {
-    if (stock >= 1000) {
-      return `${(stock / 1000).toFixed(3)} kg`;
-    }
-    return `${stock} gr`;
+  if (unidad === 'kg') {
+    return `${Number(stock).toFixed(3)} kg`;
   }
   return stock.toString();
 }
 
 // Obtener label de unidad corto
 function getUnidadShort(unidad) {
-  return unidad === 'gramos' ? 'gr' : 'un';
+  return unidad === 'kg' ? 'kg' : 'un';
 }
 
 // Inicializar
@@ -179,7 +176,7 @@ function renderLineas() {
     if (linea.productoData) {
       const productNameDiv = document.createElement('div');
       productNameDiv.className = 'product-name-display';
-      const unidadLabel = linea.productoData.unidad === 'gramos' ? ' (Gramos)' : ' (Unidad)';
+      const unidadLabel = linea.productoData.unidad === 'kg' ? ' (Kg)' : ' (Unidad)';
       const stockLabel = formatStock(linea.productoData.stock || 0, linea.productoData.unidad);
       productNameDiv.textContent = `${linea.productoData.name}${unidadLabel} - Stock: ${stockLabel}`;
       productSearchDiv.appendChild(productNameDiv);
@@ -194,19 +191,24 @@ function renderLineas() {
     const cantidadInput = document.createElement('input');
     cantidadInput.type = 'number';
     cantidadInput.className = 'cantidad-input';
-    cantidadInput.min = '1';
+    cantidadInput.min = '0.001';
     cantidadInput.value = linea.cantidad;
 
-    // Si es producto en gramos, mostrar placeholder
-    if (linea.productoData && linea.productoData.unidad === 'gramos') {
-      cantidadInput.placeholder = 'gr';
-      cantidadInput.title = 'Cantidad en gramos';
+    // Si es producto en kg, permitir decimales
+    if (linea.productoData && linea.productoData.unidad === 'kg') {
+      cantidadInput.step = '0.001';
+      cantidadInput.placeholder = 'kg';
+      cantidadInput.title = 'Cantidad en kilogramos (ej: 1.500)';
+    } else {
+      cantidadInput.step = '1';
+      cantidadInput.min = '1';
     }
 
     cantidadInput.addEventListener('change', (e) => {
-      const newCantidad = parseInt(e.target.value) || 1;
-      linea.cantidad = Math.max(1, newCantidad);
-      e.target.value = linea.cantidad;
+      const isKg = linea.productoData && linea.productoData.unidad === 'kg';
+      const newCantidad = isKg ? parseFloat(e.target.value) || 0.001 : parseInt(e.target.value) || 1;
+      linea.cantidad = isKg ? Math.max(0.001, newCantidad) : Math.max(1, newCantidad);
+      e.target.value = isKg ? linea.cantidad.toFixed(3) : linea.cantidad;
     });
 
     // ENTER en cantidad agrega nueva línea
@@ -214,8 +216,9 @@ function renderLineas() {
       if (e.key === 'Enter') {
         e.preventDefault();
         // Actualizar cantidad
-        const newCantidad = parseInt(cantidadInput.value) || 1;
-        linea.cantidad = Math.max(1, newCantidad);
+        const isKg = linea.productoData && linea.productoData.unidad === 'kg';
+        const newCantidad = isKg ? parseFloat(cantidadInput.value) || 0.001 : parseInt(cantidadInput.value) || 1;
+        linea.cantidad = isKg ? Math.max(0.001, newCantidad) : Math.max(1, newCantidad);
         // Agregar nueva línea
         agregarLinea();
       }
