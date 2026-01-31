@@ -31,18 +31,29 @@ async function loadFamilies() {
 }
 
 function updateFamilySelect() {
-  const select = document.getElementById('editFamilia');
-  if (!select) return;
+  // Actualizar select del modal de edición
+  const editSelect = document.getElementById('editFamilia');
+  if (editSelect) {
+    editSelect.innerHTML = '<option value="">Sin familia</option>';
+    allFamilies.forEach(family => {
+      const option = document.createElement('option');
+      option.value = family._id;
+      option.textContent = family.nombre;
+      editSelect.appendChild(option);
+    });
+  }
 
-  // Mantener la primera opción
-  select.innerHTML = '<option value="">Sin familia</option>';
-
-  allFamilies.forEach(family => {
-    const option = document.createElement('option');
-    option.value = family._id;
-    option.textContent = family.nombre;
-    select.appendChild(option);
-  });
+  // Actualizar select del filtro
+  const filterSelect = document.getElementById('filtroFamilia');
+  if (filterSelect) {
+    filterSelect.innerHTML = '<option value="">Todas</option>';
+    allFamilies.forEach(family => {
+      const option = document.createElement('option');
+      option.value = family._id;
+      option.textContent = family.nombre;
+      filterSelect.appendChild(option);
+    });
+  }
 }
 
 // Formatear stock según unidad
@@ -72,6 +83,7 @@ function setupFilters() {
   const filtroCodigo = document.getElementById('filtroCodigo');
   const filtroBarcode = document.getElementById('filtroBarcode');
   const filtroNombre = document.getElementById('filtroNombre');
+  const filtroFamilia = document.getElementById('filtroFamilia');
   const filtroStock = document.getElementById('filtroStock');
   const filtroActivo = document.getElementById('filtroActivo');
   const btnLimpiar = document.getElementById('btnLimpiarFiltros');
@@ -89,6 +101,7 @@ function setupFilters() {
   filtroCodigo.addEventListener('input', applyFiltersDebounced);
   filtroBarcode.addEventListener('input', applyFiltersDebounced);
   filtroNombre.addEventListener('input', applyFiltersDebounced);
+  filtroFamilia.addEventListener('change', () => { currentPage = 1; applyFilters(); });
   filtroStock.addEventListener('change', () => { currentPage = 1; applyFilters(); });
   filtroActivo.addEventListener('change', () => { currentPage = 1; applyFilters(); });
 
@@ -97,6 +110,7 @@ function setupFilters() {
     filtroCodigo.value = '';
     filtroBarcode.value = '';
     filtroNombre.value = '';
+    filtroFamilia.value = '';
     filtroStock.value = '';
     filtroActivo.value = '';
     currentPage = 1;
@@ -109,6 +123,7 @@ function applyFilters() {
   const filtroCodigo = document.getElementById('filtroCodigo').value.trim().toLowerCase();
   const filtroBarcode = document.getElementById('filtroBarcode').value.trim().toLowerCase();
   const filtroNombre = document.getElementById('filtroNombre').value.trim().toLowerCase();
+  const filtroFamilia = document.getElementById('filtroFamilia').value;
   const filtroStock = document.getElementById('filtroStock').value;
   const filtroActivo = document.getElementById('filtroActivo').value;
 
@@ -128,6 +143,14 @@ function applyFilters() {
     // Filtro por nombre
     if (filtroNombre && !product.name.toLowerCase().includes(filtroNombre)) {
       return false;
+    }
+
+    // Filtro por familia
+    if (filtroFamilia) {
+      const productFamiliaId = product.familia ? (product.familia._id || product.familia) : null;
+      if (productFamiliaId !== filtroFamilia) {
+        return false;
+      }
     }
 
     // Filtro por stock
