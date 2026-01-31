@@ -178,13 +178,15 @@ function renderFamilies() {
 
 async function deleteFamily(familyId, familyName, productCount) {
   if (productCount > 0) {
-    alert(`No se puede eliminar la familia "${familyName}" porque tiene ${productCount} producto(s) asociado(s).\n\nPrimero debe reasignar o eliminar esos productos.`);
+    showWarningAlert(
+      'No se puede eliminar',
+      `La familia "${familyName}" tiene ${productCount} producto(s) asociado(s). Primero debe reasignar o eliminar esos productos.`
+    );
     return;
   }
 
-  if (!confirm(`¿Está seguro de eliminar la familia "${familyName}"?`)) {
-    return;
-  }
+  const confirmed = await showDeleteConfirm(`¿Eliminar "${familyName}"?`);
+  if (!confirmed) return;
 
   try {
     const response = await authenticatedFetch(`${API_URL}/families/${familyId}`, {
@@ -194,14 +196,14 @@ async function deleteFamily(familyId, familyName, productCount) {
     const data = await response.json();
 
     if (data.success) {
-      alert(`Familia "${familyName}" eliminada exitosamente.`);
+      showSuccessAlert('Familia eliminada', `"${familyName}" fue eliminada exitosamente.`);
       loadFamilies();
     } else {
-      alert('Error: ' + data.message);
+      showErrorAlert('Error', data.message);
     }
   } catch (error) {
     console.error('Error al eliminar familia:', error);
-    alert('Error de conexión con el servidor');
+    showErrorAlert('Error', 'Error de conexión con el servidor');
   }
 }
 
@@ -226,7 +228,7 @@ function setupEditForm() {
 function openEditModal(familyId) {
   const family = allFamilies.find(f => f._id === familyId);
   if (!family) {
-    alert('Familia no encontrada');
+    showErrorAlert('Error', 'Familia no encontrada');
     return;
   }
 

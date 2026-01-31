@@ -233,7 +233,7 @@ function exportToCSV() {
   const movements = getCurrentMovements();
 
   if (movements.length === 0) {
-    alert('No hay movimientos para exportar');
+    showWarningAlert('Sin datos', 'No hay movimientos para exportar');
     return;
   }
 
@@ -285,7 +285,7 @@ function exportToExcel() {
   const movements = getCurrentMovements();
 
   if (movements.length === 0) {
-    alert('No hay movimientos para exportar');
+    showWarningAlert('Sin datos', 'No hay movimientos para exportar');
     return;
   }
 

@@ -65,8 +65,14 @@ async function verifyAuth() {
 function setupLogoutButton() {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+    logoutBtn.addEventListener('click', async () => {
+      const confirmed = await showConfirm(
+        '¿Cerrar sesión?',
+        '¿Estás seguro de que quieres cerrar sesión?',
+        'Sí, salir',
+        'Cancelar'
+      );
+      if (confirmed) {
         logout();
       }
     });
@@ -178,4 +184,89 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// ==================== SweetAlert2 Helpers ====================
+
+// Mostrar alerta de éxito
+function showSuccessAlert(title, text = '') {
+  return Swal.fire({
+    icon: 'success',
+    title: title,
+    text: text,
+    timer: 2500,
+    showConfirmButton: false
+  });
+}
+
+// Mostrar alerta de error
+function showErrorAlert(title, text = '') {
+  return Swal.fire({
+    icon: 'error',
+    title: title,
+    text: text,
+    confirmButtonColor: '#d33'
+  });
+}
+
+// Mostrar alerta de advertencia
+function showWarningAlert(title, text = '') {
+  return Swal.fire({
+    icon: 'warning',
+    title: title,
+    text: text,
+    confirmButtonColor: '#f0ad4e'
+  });
+}
+
+// Mostrar alerta de información
+function showInfoAlert(title, text = '') {
+  return Swal.fire({
+    icon: 'info',
+    title: title,
+    text: text,
+    confirmButtonColor: '#3085d6'
+  });
+}
+
+// Confirmar acción (reemplaza confirm())
+async function showConfirm(title, text = '', confirmText = 'Sí', cancelText = 'Cancelar') {
+  const result = await Swal.fire({
+    title: title,
+    text: text,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#28a745',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: confirmText,
+    cancelButtonText: cancelText
+  });
+  return result.isConfirmed;
+}
+
+// Confirmar eliminación (con estilo peligro)
+async function showDeleteConfirm(title, text = '') {
+  const result = await Swal.fire({
+    title: title,
+    text: text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  });
+  return result.isConfirmed;
+}
+
+// Toast (notificación pequeña)
+function showToast(icon, title) {
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true
+  });
+  return Toast.fire({ icon, title });
 }

@@ -342,9 +342,12 @@ function goToPage(page) {
 }
 
 async function deleteProduct(productId, productName) {
-  if (!confirm(`¿Está seguro de eliminar el producto "${productName}"?\n\nNota: Solo se puede eliminar si no tiene movimientos de stock.`)) {
-    return;
-  }
+  const confirmed = await showDeleteConfirm(
+    `¿Eliminar "${productName}"?`,
+    'Solo se puede eliminar si no tiene movimientos de stock.'
+  );
+
+  if (!confirmed) return;
 
   try {
     const response = await authenticatedFetch(`${API_URL}/products/${productId}`, {
@@ -362,19 +365,19 @@ async function deleteProduct(productId, productName) {
     const data = await response.json();
 
     if (data.success) {
-      alert(`Producto "${productName}" eliminado exitosamente.`);
+      showSuccessAlert('Producto eliminado', `"${productName}" fue eliminado exitosamente.`);
       loadProducts();
     } else {
       // Mostrar mensaje específico
       if (data.movementCount !== undefined) {
-        alert(`${data.message}\n\nMovimientos asociados: ${data.movementCount}`);
+        showErrorAlert('No se puede eliminar', `${data.message}\n\nMovimientos asociados: ${data.movementCount}`);
       } else {
-        alert('Error: ' + data.message);
+        showErrorAlert('Error', data.message);
       }
     }
   } catch (error) {
     console.error('Error al eliminar producto:', error);
-    alert(error.message || 'Error de conexión con el servidor');
+    showErrorAlert('Error', error.message || 'Error de conexión con el servidor');
   }
 }
 
@@ -416,12 +419,12 @@ async function openEditModal(productId) {
         fillEditForm(product);
         document.getElementById('editModal').style.display = 'flex';
       } else {
-        alert('Producto no encontrado');
+        showErrorAlert('Error', 'Producto no encontrado');
       }
     }
   } catch (error) {
     console.error('Error al cargar producto:', error);
-    alert(error.message || 'Error al cargar los datos del producto');
+    showErrorAlert('Error', error.message || 'Error al cargar los datos del producto');
   }
 }
 

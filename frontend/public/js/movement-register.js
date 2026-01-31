@@ -476,9 +476,13 @@ async function guardarComprobante() {
     }
   }
 
-  if (!confirm(`¿Confirmar comprobante de ${tipo} con ${lineasValidas.length} producto(s)?`)) {
-    return;
-  }
+  const confirmed = await showConfirm(
+    '¿Confirmar comprobante?',
+    `Se registrará un ${tipo} con ${lineasValidas.length} producto(s).`,
+    'Sí, guardar',
+    'Cancelar'
+  );
+  if (!confirmed) return;
 
   const btnGuardar = document.getElementById('btnGuardar');
   btnGuardar.disabled = true;
@@ -514,15 +518,18 @@ async function guardarComprobante() {
     const data = await response.json();
 
     if (data.success) {
-      showSuccess('successMessage', `✓ Comprobante ${data.comprobante} guardado exitosamente con ${data.movements.length} producto(s)`);
+      const cargarOtro = await showConfirm(
+        '¡Comprobante guardado!',
+        `${data.comprobante} registrado con ${data.movements.length} producto(s).`,
+        'Cargar otro',
+        'Ver movimientos'
+      );
 
-      setTimeout(() => {
-        if (confirm('¿Desea cargar otro comprobante?')) {
-          resetForm();
-        } else {
-          window.location.href = 'stock-movements.html';
-        }
-      }, 2000);
+      if (cargarOtro) {
+        resetForm();
+      } else {
+        window.location.href = 'stock-movements.html';
+      }
     } else {
       if (data.errors && data.errors.length > 0) {
         showError('errorMessage', data.message + ':\n' + data.errors.join('\n'));
@@ -541,11 +548,15 @@ async function guardarComprobante() {
 }
 
 // Cancelar comprobante
-function cancelarComprobante() {
+async function cancelarComprobante() {
   if (comprobanteState.lineas.some(l => l.productoId !== null)) {
-    if (!confirm('¿Está seguro de cancelar? Se perderán todos los datos ingresados.')) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      '¿Cancelar comprobante?',
+      'Se perderán todos los datos ingresados.',
+      'Sí, cancelar',
+      'Volver'
+    );
+    if (!confirmed) return;
   }
 
   resetForm();
