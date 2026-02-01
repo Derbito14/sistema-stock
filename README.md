@@ -1,6 +1,6 @@
 # Sistema de Gestión de Stock
 
-Sistema web completo para gestión de inventario de comercios con autenticación JWT, gestión de productos y control de movimientos de stock.
+Sistema web completo para gestión de inventario de comercios con autenticación JWT, gestión de productos por familias, control de movimientos de stock y soporte para productos pesables.
 
 ## Stack Tecnológico
 
@@ -8,6 +8,7 @@ Sistema web completo para gestión de inventario de comercios con autenticación
 - **Base de datos**: MongoDB + Mongoose (MongoDB Atlas)
 - **Autenticación**: bcrypt + JWT
 - **Frontend**: HTML + CSS + JavaScript vanilla
+- **UI Components**: SweetAlert2 para alertas y confirmaciones
 - **Despliegue**:
   - Backend: Render
   - Frontend: Vercel
@@ -20,13 +21,15 @@ SistemaStock/
 │   ├── src/
 │   │   ├── models/
 │   │   │   ├── User.js              # Modelo de usuarios
-│   │   │   ├── Product.js           # Modelo de productos
+│   │   │   ├── Product.js           # Modelo de productos (con familia y unidad)
+│   │   │   ├── Family.js            # Modelo de familias/categorías
 │   │   │   └── StockMovement.js     # Modelo de movimientos de stock
 │   │   ├── middleware/
 │   │   │   └── auth.js              # Middleware de autenticación JWT
 │   │   ├── routes/
 │   │   │   ├── auth.js              # Rutas de autenticación
 │   │   │   ├── products.js          # CRUD de productos
+│   │   │   ├── families.js          # CRUD de familias
 │   │   │   └── stockMovements.js    # Registro de movimientos
 │   │   ├── utils/
 │   │   │   └── stockCalculator.js   # Cálculo dinámico de stock
@@ -42,56 +45,137 @@ SistemaStock/
 └── frontend/
     └── public/
         ├── index.html               # Login
-        ├── dashboard.html           # Dashboard principal
-        ├── product-list.html        # Listado de productos
-        ├── product-form.html        # Formulario nuevo producto
-        ├── movement-register.html   # Registro de movimientos
+        ├── dashboard.html           # Dashboard principal con accesos rápidos
+        ├── family-list.html         # Gestión de familias
+        ├── product-form.html        # Alta de productos
+        ├── product-list.html        # Listado de productos con paginación
+        ├── ingresos.html            # Registro de ingresos (compras/ajustes+)
+        ├── egresos.html             # Registro de egresos (ventas/ajustes-)
         ├── stock-movements.html     # Historial de movimientos
         ├── css/
-        │   └── style.css            # Estilos globales
+        │   └── style.css            # Estilos globales responsive
         └── js/
             ├── login.js             # Lógica de login
             ├── dashboard.js         # Lógica del dashboard
-            ├── common.js            # Funciones compartidas
-            ├── product-list.js      # Listado de productos
+            ├── common.js            # Funciones compartidas y helpers
+            ├── family-list.js       # Gestión de familias
+            ├── product-list.js      # Listado con filtros y paginación
             ├── product-form.js      # Alta de productos
-            ├── movement-register.js # Registro de movimientos
-            └── stock-movements.js   # Historial de movimientos
+            ├── movement-register.js # Registro de movimientos (ingresos/egresos)
+            └── stock-movements.js   # Historial con filtros y exportación
 ```
 
 ## Funcionalidades Implementadas
 
-### Autenticación
+### Autenticación y Seguridad
 - Login con usuario y contraseña
-- Autenticación con JWT
+- Autenticación con JWT (tokens de 7 días)
 - Protección de rutas en backend y frontend
-- Verificación automática de token
-- Cierre de sesión
+- Verificación automática de token en cada página
+- Cierre de sesión con limpieza de localStorage
+- Redirección automática si el token expira
+
+### Gestión de Familias (Categorías)
+- **Alta de familias** (ej: Fiambres, Carnes, Lácteos, Bebidas)
+- **Edición de familias** (nombre y descripción)
+- **Eliminación de familias** (solo si no tiene productos asociados)
+- **Contador de productos** por familia
+- Familia opcional al crear productos
 
 ### Gestión de Productos
-- **Alta de productos** con código de barras opcional
-- **Código interno autogenerado** (formato: PROD-XXXXX)
-- **Edición de productos** (nombre, precio, stock mínimo, código de barras)
+- **Alta de productos** con los siguientes campos:
+  - Código de barras (opcional, único si se ingresa)
+  - Nombre del producto (obligatorio)
+  - Familia/Categoría (opcional)
+  - Unidad de medida: Unidad o Kilogramos
+  - Precio
+  - Stock mínimo (para alertas)
+- **Código interno autogenerado** (formato: P-000001, P-000002, etc.)
+- **Soporte para productos sin código de barras** (múltiples productos pueden no tener código)
+- **Edición completa** de todos los campos
 - **Eliminación de productos** (solo si no tiene movimientos asociados)
-- **Listado completo** con stock actual calculado en tiempo real
-- **Alertas de stock bajo** cuando está por debajo del mínimo
-- **Búsqueda por código** (código interno o código de barras)
+- **Activar/Desactivar productos**
 
-### Gestión de Stock
-- **Registro de movimientos** (entradas y salidas)
-- **Cálculo dinámico de stock** basado en movimientos
-- **Historial completo** de movimientos por producto
-- **Validaciones de stock** (no permite salidas mayores al stock disponible)
-- **Trazabilidad completa** de todos los movimientos
+### Listado de Productos
+- **Paginación** (10 productos por página)
+- **Ordenamiento** por código interno ascendente
+- **Indicador de rango** (ej: "Mostrando 1-10 de 45")
+- **Filtros múltiples**:
+  - Por código interno
+  - Por código de barras
+  - Por nombre
+  - Por familia
+  - Por estado de stock (bajo mínimo, sin stock)
+  - Por estado (activo/inactivo)
+- **Stock actual calculado** en tiempo real
+- **Alertas visuales** de stock bajo (badge rojo)
+- **Formato de stock según unidad**:
+  - Unidades: números enteros
+  - Kilogramos: 3 decimales (ej: 1.500 kg)
+
+### Registro de Movimientos (Estilo Comprobante)
+- **Pantallas separadas**:
+  - **Ingresos**: Para compras y ajustes positivos (AC+)
+  - **Egresos**: Para ventas y ajustes negativos (AC-)
+- **Múltiples productos por comprobante**
+- **Número de comprobante automático** (formato: MOV-00001)
+- **Búsqueda de productos**:
+  - Por código interno (ENTER para buscar)
+  - Por código de barras
+  - Por nombre (modal de búsqueda con F2 o botón 🔍)
+- **Validaciones**:
+  - No permite egresos mayores al stock disponible
+  - No permite productos duplicados en el mismo comprobante
+  - Cantidad mínima según unidad (1 para unidades, 0.001 para kg)
+- **ENTER en cantidad** agrega nueva línea automáticamente
+- **Fecha con zona horaria local** (no UTC)
+- **Campo de observaciones** para notas
+
+### Historial de Movimientos
+- **Vista tabular** de todos los movimientos
+- **Filtros**:
+  - Por tipo (Ingreso/Egreso)
+  - Por rango de fechas
+  - Por código de producto
+  - Por nombre de producto
+- **Fecha por defecto**: día actual
+- **Totales calculados**:
+  - Total de entradas
+  - Total de salidas
+  - Balance
+- **Exportación de datos**:
+  - CSV (compatible con Excel)
+  - Excel (formato .xls)
+- **Tipos de movimiento diferenciados**:
+  - Ingreso (compra)
+  - Egreso (venta)
+  - Ajuste + (AC+)
+  - Ajuste - (AC-)
+
+### Interfaz de Usuario
+- **Dashboard con accesos rápidos** (2 columnas)
+- **Menú lateral** con navegación completa
+- **SweetAlert2** para:
+  - Confirmaciones de acciones
+  - Alertas de éxito
+  - Mensajes de error
+  - Advertencias
+- **Diseño responsive** (adaptable a móviles)
+- **Temas de color**:
+  - Verde para ingresos
+  - Rojo para egresos
+- **Iconos emoji** para mejor UX
 
 ### Características Técnicas
 - Arquitectura de código interno único y secuencial
-- Stock calculado dinámicamente (no almacenado en campo)
+- Stock calculado dinámicamente (suma de ingresos - suma de egresos)
+- Índice sparse en código de barras (permite múltiples null)
+- Auto-reparación de índices al iniciar el servidor
 - Protección contra eliminación de productos con historial
 - Validaciones en frontend y backend
 - Manejo robusto de errores
 - CORS configurado para producción
-- Responsive design
+- Zona horaria local para fechas (no UTC)
 
 ## Requisitos Previos
 
@@ -140,13 +224,11 @@ Esto crea:
 
 ### 4. Configurar el Frontend
 
-Edita `frontend/public/js/common.js` y asegúrate de que apunte a tu backend local:
+Edita `frontend/public/js/common.js` y cambia la URL del API:
 
 ```javascript
 const API_URL = 'http://localhost:5000/api';
 ```
-
-También actualiza `login.js` y `dashboard.js` con la misma URL.
 
 ## Ejecutar el Proyecto Localmente
 
@@ -207,12 +289,7 @@ Tu backend estará en: `https://tu-servicio.onrender.com`
 2. Importa tu repositorio
 3. Configura:
    - **Root Directory**: `frontend/public`
-4. Antes de desplegar, actualiza las URLs en:
-   - `frontend/public/js/common.js`
-   - `frontend/public/js/login.js`
-   - `frontend/public/js/dashboard.js`
-
-   Cambia:
+4. Antes de desplegar, actualiza la URL en `frontend/public/js/common.js`:
    ```javascript
    const API_URL = 'https://tu-backend.onrender.com/api';
    ```
@@ -224,239 +301,43 @@ Tu frontend estará en: `https://tu-proyecto.vercel.app`
 
 ### Autenticación
 
-#### POST `/api/auth/login`
-Login de usuario
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login de usuario |
+| GET | `/api/auth/verify` | Verificar token |
 
-**Body:**
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
+### Familias
 
-**Response:**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "user": {
-    "id": "...",
-    "username": "admin",
-    "role": "admin"
-  }
-}
-```
-
-#### GET `/api/auth/verify`
-Verificar token
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": "...",
-    "username": "admin",
-    "role": "admin"
-  }
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/families` | Listar todas las familias |
+| POST | `/api/families` | Crear nueva familia |
+| PUT | `/api/families/:id` | Actualizar familia |
+| DELETE | `/api/families/:id` | Eliminar familia |
 
 ### Productos
 
-#### GET `/api/products`
-Obtener todos los productos con stock calculado
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "count": 10,
-  "products": [
-    {
-      "_id": "...",
-      "codigoInterno": "PROD-00001",
-      "barcode": "1234567890",
-      "name": "Producto Ejemplo",
-      "price": 100.50,
-      "minStock": 10,
-      "stock": 25,
-      "activo": true
-    }
-  ]
-}
-```
-
-#### POST `/api/products`
-Crear nuevo producto
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Content-Type: application/json
-```
-
-**Body:**
-```json
-{
-  "barcode": "1234567890",
-  "name": "Producto Nuevo",
-  "price": 150.00,
-  "minStock": 5
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Producto creado exitosamente",
-  "product": {
-    "_id": "...",
-    "codigoInterno": "PROD-00002",
-    "barcode": "1234567890",
-    "name": "Producto Nuevo",
-    "price": 150.00,
-    "minStock": 5
-  }
-}
-```
-
-#### GET `/api/products/search?code={codigo}`
-Buscar producto por código interno o código de barras
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "product": { ... }
-}
-```
-
-#### PUT `/api/products/:id`
-Actualizar producto
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Content-Type: application/json
-```
-
-**Body:**
-```json
-{
-  "name": "Producto Actualizado",
-  "price": 200.00,
-  "minStock": 15,
-  "barcode": "0987654321"
-}
-```
-
-#### DELETE `/api/products/:id`
-Eliminar producto (solo si no tiene movimientos)
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Producto eliminado exitosamente"
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/products` | Listar productos con stock calculado |
+| POST | `/api/products` | Crear nuevo producto |
+| GET | `/api/products/search?code={codigo}` | Buscar por código |
+| PUT | `/api/products/:id` | Actualizar producto |
+| DELETE | `/api/products/:id` | Eliminar producto |
 
 ### Movimientos de Stock
 
-#### GET `/api/stock-movements`
-Obtener historial de movimientos
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "count": 50,
-  "movements": [
-    {
-      "_id": "...",
-      "producto": {
-        "_id": "...",
-        "codigoInterno": "PROD-00001",
-        "name": "Producto Ejemplo"
-      },
-      "tipo": "entrada",
-      "cantidad": 10,
-      "motivo": "Compra a proveedor",
-      "fecha": "2024-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-#### POST `/api/stock-movements`
-Registrar nuevo movimiento
-
-**Headers:**
-```
-Authorization: Bearer {token}
-Content-Type: application/json
-```
-
-**Body:**
-```json
-{
-  "codigoProducto": "PROD-00001",
-  "tipo": "entrada",
-  "cantidad": 10,
-  "motivo": "Compra a proveedor"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Movimiento registrado exitosamente",
-  "movement": { ... },
-  "stockActual": 35
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/stock-movements` | Listar movimientos con filtros |
+| POST | `/api/stock-movements` | Registrar movimiento(s) |
+| GET | `/api/stock-movements/next-comprobante` | Obtener próximo número de comprobante |
 
 ### Health Check
 
-#### GET `/api/health`
-Verificar estado del servidor
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "API funcionando correctamente"
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/health` | Verificar estado del servidor |
 
 ## Scripts Disponibles
 
@@ -482,34 +363,26 @@ npm run clean-orphan
 ## Solución de Problemas
 
 ### Error: "Cannot connect to MongoDB"
-
 1. Verifica tu connection string en `.env`
 2. Asegúrate de que tu IP esté permitida en MongoDB Atlas (Network Access)
 3. Verifica que el usuario y contraseña sean correctos
 
 ### Error de CORS en producción
-
 1. Verifica que la URL del backend en el frontend sea correcta
-2. Asegúrate de que CORS esté configurado en el backend para aceptar tu dominio de Vercel
+2. Asegúrate de que CORS esté configurado en el backend
 
 ### El login no funciona
-
 1. Verifica que el backend esté corriendo
-2. Abre la consola del navegador (F12) para ver errores detallados
+2. Abre la consola del navegador (F12) para ver errores
 3. Verifica que hayas creado el usuario admin
-4. Asegúrate de que las variables de entorno estén configuradas
 
-### Los productos no cargan
+### La fecha muestra el día siguiente
+- Esto ocurría por usar UTC. Ya está corregido con `getTodayLocal()`
+- Si persiste, limpia la caché del navegador (Ctrl+F5)
 
-1. Verifica que el token sea válido
-2. Asegúrate de que la URL del API en `common.js` sea correcta
-3. Revisa los logs del backend en Render
-
-### Error 500 en el servidor
-
-1. Revisa los logs en Render o tu consola local
-2. Verifica que todas las variables de entorno estén configuradas
-3. Asegúrate de que MongoDB esté conectado
+### No puedo crear productos sin código de barras
+- El sistema ya permite múltiples productos sin código de barras
+- El índice sparse se auto-repara al iniciar el servidor
 
 ## Seguridad
 
@@ -518,25 +391,42 @@ npm run clean-orphan
 - ✅ Cambiar credenciales por defecto del admin
 - ✅ Usar un `JWT_SECRET` fuerte y único
 - ✅ Configurar HTTPS (Render y Vercel lo hacen automáticamente)
+- ✅ Validación de inputs en frontend y backend
 - ⚠️ Implementar rate limiting
-- ⚠️ Agregar validación de inputs más robusta
 - ⚠️ Implementar refresh tokens
 - ⚠️ Agregar logging de accesos
 - ⚠️ Implementar roles de usuario más granulares
 
+## Funcionalidades Completadas
+
+- [x] Autenticación JWT
+- [x] CRUD de productos
+- [x] CRUD de familias/categorías
+- [x] Unidad de medida (unidad/kg)
+- [x] Productos sin código de barras
+- [x] Registro de ingresos (compras + ajustes positivos)
+- [x] Registro de egresos (ventas + ajustes negativos)
+- [x] Múltiples productos por comprobante
+- [x] Historial de movimientos con filtros
+- [x] Exportación a CSV y Excel
+- [x] Paginación en listados
+- [x] Filtro por familia
+- [x] Alertas con SweetAlert2
+- [x] Diseño responsive
+- [x] Zona horaria local para fechas
+
 ## Próximas Mejoras Sugeridas
 
 - [ ] Reportes y estadísticas de stock
-- [ ] Exportación de datos (CSV, Excel)
-- [ ] Categorías de productos
+- [ ] Gráficos de movimientos
 - [ ] Múltiples usuarios con diferentes roles
 - [ ] Sistema de proveedores
+- [ ] Sistema de clientes
 - [ ] Historial de cambios de precios
-- [ ] Notificaciones de stock bajo
-- [ ] Búsqueda avanzada y filtros
-- [ ] Paginación en listados
+- [ ] Notificaciones de stock bajo por email
 - [ ] Códigos QR para productos
-- [ ] App móvil
+- [ ] App móvil (React Native / Flutter)
+- [ ] Backup automático de datos
 
 ## Tecnologías y Dependencias
 
@@ -547,6 +437,11 @@ npm run clean-orphan
 - jsonwebtoken: ^9.0.2
 - dotenv: ^16.3.1
 - cors: ^2.8.5
+
+### Frontend
+- HTML5 + CSS3
+- JavaScript ES6+
+- SweetAlert2 (CDN)
 
 ### DevDependencies
 - nodemon: ^3.0.1
@@ -563,4 +458,4 @@ Para reportar problemas o sugerencias:
 
 ---
 
-**Desarrollado con ❤️ para la gestión eficiente de inventarios**
+**Desarrollado con Node.js, MongoDB y JavaScript vanilla**
