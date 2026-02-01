@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingresos de Stock - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* Estilos específicos para el formulario estilo ERP */
+    .comprobante-form {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .comprobante-header {
+      display: grid;
+      grid-template-columns: 200px 180px 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .detalle-section {
+      margin-top: 24px;
+    }
+
+    .detalle-section h3 {
+      margin-bottom: 12px;
+      color: #333;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .detalle-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .detalle-table thead {
+      background: #f5f5f5;
+    }
+
+    .detalle-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .detalle-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+
+    .detalle-row {
+      transition: background-color 0.2s;
+    }
+
+    .detalle-row:hover {
+      background-color: #f9f9f9;
+    }
+
+    .product-search-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .product-search-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .product-search-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+
+    .btn-search-icon {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    .btn-search-icon:hover {
+      background: #1976D2;
+    }
+
+    .product-name-display {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .cantidad-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .btn-remove-line {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+
+    .btn-remove-line:hover {
+      background: #d32f2f;
+    }
+
+    .btn-add-line {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-add-line:hover {
+      background: #45a049;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    /* Modal de búsqueda */
+    .search-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-modal.active {
+      display: flex;
+    }
+
+    .search-modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .search-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .search-modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .search-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-modal-close:hover {
+      color: #333;
+    }
+
+    .search-modal-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .search-modal-input:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+
+    .search-results-container {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+
+    .search-result-item {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+      background: #f5f5f5;
+    }
+
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-result-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .search-result-code {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .search-no-results {
+      padding: 40px;
+      text-align: center;
+      color: #999;
+    }
+
+    .empty-detalle {
+      padding: 40px;
+      text-align: center;
+      color: #999;
+      font-style: italic;
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .page-header h2 {
+      color: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesion</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menu lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="family-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📁</span>
+            <span>Familias</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="ingresos.html" class="sidebar-link active">
+            <span class="sidebar-icon">📥</span>
+            <span>Ingresos</span>
+          </a>
+          <a href="egresos.html" class="sidebar-link">
+            <span class="sidebar-icon">📤</span>
+            <span>Egresos</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="page-header">
+          <h2>📥 Ingreso de Stock</h2>
+          <p>Registrar entradas de mercaderia</p>
+        </div>
+
+        <div class="comprobante-form">
+          <!-- Cabecera del comprobante -->
+          <div class="comprobante-header">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tipoMovimiento">Tipo de Ingreso *</label>
+              <select id="tipoMovimiento" class="form-select" required>
+                <option value="">Seleccionar...</option>
+                <option value="INGRESO">Ingreso (Compra)</option>
+                <option value="AJUSTE_POSITIVO">Ajuste + (AC+)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="fechaMovimiento">Fecha *</label>
+              <input type="date" id="fechaMovimiento" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="observaciones">Observaciones</label>
+              <input
+                type="text"
+                id="observaciones"
+                placeholder="Ej: Proveedor, factura, etc."
+                autocomplete="off"
+              >
+            </div>
+          </div>
+
+          <!-- Detalle (Lineas de productos) -->
+          <div class="detalle-section">
+            <h3>Detalle del Ingreso</h3>
+
+            <div id="emptyDetalle" class="empty-detalle">
+              No hay lineas agregadas. Haga click en "+ Agregar linea" para comenzar.
+            </div>
+
+            <table id="detalleTable" class="detalle-table" style="display: none;">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Producto (Codigo/Barras) 🔍</th>
+                  <th style="width: 15%; text-align: center;">Cantidad</th>
+                  <th style="width: 10%; text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="detalleTableBody">
+                <!-- Las lineas se agregan dinamicamente -->
+              </tbody>
+            </table>
+
+            <button type="button" id="btnAgregarLinea" class="btn-add-line">
+              + Agregar linea
+            </button>
+          </div>
+
+          <!-- Mensajes de error/exito -->
+          <div id="errorMessage" class="error-message" style="display: none; margin-top: 16px;"></div>
+          <div id="successMessage" class="success-message" style="display: none; margin-top: 16px;"></div>
+
+          <!-- Acciones -->
+          <div class="form-actions">
+            <button type="button" id="btnCancelar" class="btn-secondary">
+              Cancelar
+            </button>
+            <button type="button" id="btnGuardar" class="btn-primary" style="background: #28a745;">
+              📥 Guardar Ingreso
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal de busqueda por nombre -->
+  <div id="searchModal" class="search-modal">
+    <div class="search-modal-content">
+      <div class="search-modal-header">
+        <h3>Buscar Producto por Nombre</h3>
+        <button class="search-modal-close" onclick="closeSearchModal()">&times;</button>
+      </div>
+
+      <input
+        type="text"
+        id="searchModalInput"
+        class="search-modal-input"
+        placeholder="Escriba el nombre del producto..."
+        autocomplete="off"
+      >
+
+      <div class="search-results-container" id="searchResultsContainer">
+        <div class="search-no-results">
+          Escriba para buscar productos...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Configuracion para esta pagina
+    const MODO_MOVIMIENTO = 'INGRESO';
+    const REDIRECT_URL = 'ingresos.html';
+  </script>
+  <script src="js/movement-register.js"></script>
+</body>
+</html>

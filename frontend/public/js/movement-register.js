@@ -537,14 +537,26 @@ async function guardarComprobante() {
         showError('errorMessage', data.message || 'Error al guardar el comprobante');
       }
       btnGuardar.disabled = false;
-      btnGuardar.textContent = '💾 Guardar Comprobante';
+      btnGuardar.textContent = getButtonText();
     }
   } catch (error) {
     console.error('Error al guardar comprobante:', error);
     showError('errorMessage', 'Error de conexión con el servidor');
     btnGuardar.disabled = false;
-    btnGuardar.textContent = '💾 Guardar Comprobante';
+    btnGuardar.textContent = getButtonText();
   }
+}
+
+// Obtener texto del botón según el modo
+function getButtonText() {
+  if (typeof MODO_MOVIMIENTO !== 'undefined') {
+    if (MODO_MOVIMIENTO === 'INGRESO') {
+      return '📥 Guardar Ingreso';
+    } else if (MODO_MOVIMIENTO === 'EGRESO') {
+      return '📤 Guardar Egreso';
+    }
+  }
+  return '💾 Guardar Comprobante';
 }
 
 // Cancelar comprobante
@@ -580,8 +592,12 @@ function resetForm() {
 
   agregarLinea();
 
-  document.getElementById('btnGuardar').disabled = false;
-  document.getElementById('btnGuardar').textContent = '💾 Guardar Comprobante';
+  // Recargar productos para actualizar stock
+  loadAllProducts();
+
+  const btnGuardar = document.getElementById('btnGuardar');
+  btnGuardar.disabled = false;
+  btnGuardar.textContent = getButtonText();
 }
 
 // Funciones de UI
