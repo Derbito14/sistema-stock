@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Inicializar formulario
 function initializeForm() {
   // Establecer fecha de hoy por defecto
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayLocal();
   document.getElementById('fechaMovimiento').value = today;
 
   // Agregar primera línea automáticamente
@@ -579,7 +579,7 @@ function resetForm() {
   document.getElementById('tipoMovimiento').value = '';
   document.getElementById('observaciones').value = '';
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayLocal();
   document.getElementById('fechaMovimiento').value = today;
 
   comprobanteState = {

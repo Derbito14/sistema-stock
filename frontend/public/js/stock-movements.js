@@ -9,7 +9,7 @@ function formatStock(stock, unidad) {
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', () => {
   // Establecer fechas por defecto (hoy)
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayLocal();
   document.getElementById('filtroFechaDesde').value = today;
   document.getElementById('filtroFechaHasta').value = today;
 
@@ -270,7 +270,7 @@ function exportToCSV() {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
 
-  const fecha = new Date().toISOString().split('T')[0];
+  const fecha = getTodayLocal();
   link.setAttribute('href', url);
   link.setAttribute('download', `movimientos_${fecha}.csv`);
   link.style.visibility = 'hidden';
@@ -347,7 +347,7 @@ function exportToExcel() {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
 
-  const fecha = new Date().toISOString().split('T')[0];
+  const fecha = getTodayLocal();
   link.setAttribute('href', url);
   link.setAttribute('download', `movimientos_${fecha}.xls`);
   link.style.visibility = 'hidden';
