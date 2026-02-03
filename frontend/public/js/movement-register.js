@@ -113,6 +113,36 @@ function agregarLinea() {
   }, 50);
 }
 
+// Formatear precio
+function formatPrice(price) {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS'
+  }).format(price);
+}
+
+// Calcular y actualizar total general
+function actualizarTotalGeneral() {
+  const tfoot = document.getElementById('detalleTableFoot');
+  const totalEl = document.getElementById('totalGeneral');
+
+  const lineasConProducto = comprobanteState.lineas.filter(l => l.productoId !== null);
+
+  if (lineasConProducto.length === 0) {
+    tfoot.style.display = 'none';
+    return;
+  }
+
+  tfoot.style.display = 'table-footer-group';
+
+  const total = lineasConProducto.reduce((sum, linea) => {
+    const precio = linea.productoData?.price || 0;
+    return sum + (linea.cantidad * precio);
+  }, 0);
+
+  totalEl.textContent = formatPrice(total);
+}
+
 // Renderizar todas las líneas
 function renderLineas() {
   const tbody = document.getElementById('detalleTableBody');
@@ -122,6 +152,7 @@ function renderLineas() {
   if (comprobanteState.lineas.length === 0) {
     table.style.display = 'none';
     emptyMessage.style.display = 'block';
+    actualizarTotalGeneral();
     return;
   }
 
@@ -209,6 +240,13 @@ function renderLineas() {
       const newCantidad = isKg ? parseFloat(e.target.value) || 0.001 : parseInt(e.target.value) || 1;
       linea.cantidad = isKg ? Math.max(0.001, newCantidad) : Math.max(1, newCantidad);
       e.target.value = isKg ? linea.cantidad.toFixed(3) : linea.cantidad;
+      // Actualizar subtotal de esta línea
+      const subtotalCell = document.getElementById(`subtotal-${linea.lineaId}`);
+      if (subtotalCell && linea.productoData) {
+        const subtotal = linea.cantidad * (linea.productoData.price || 0);
+        subtotalCell.textContent = formatPrice(subtotal);
+      }
+      actualizarTotalGeneral();
     });
 
     // ENTER en cantidad agrega nueva línea
@@ -219,12 +257,42 @@ function renderLineas() {
         const isKg = linea.productoData && linea.productoData.unidad === 'kg';
         const newCantidad = isKg ? parseFloat(cantidadInput.value) || 0.001 : parseInt(cantidadInput.value) || 1;
         linea.cantidad = isKg ? Math.max(0.001, newCantidad) : Math.max(1, newCantidad);
+        // Actualizar subtotal
+        const subtotalCell = document.getElementById(`subtotal-${linea.lineaId}`);
+        if (subtotalCell && linea.productoData) {
+          const subtotal = linea.cantidad * (linea.productoData.price || 0);
+          subtotalCell.textContent = formatPrice(subtotal);
+        }
+        actualizarTotalGeneral();
         // Agregar nueva línea
         agregarLinea();
       }
     });
 
     cantidadCell.appendChild(cantidadInput);
+
+    // Columna de precio unitario
+    const precioCell = document.createElement('td');
+    precioCell.style.textAlign = 'right';
+    if (linea.productoData) {
+      precioCell.textContent = formatPrice(linea.productoData.price || 0);
+    } else {
+      precioCell.textContent = '-';
+      precioCell.style.color = '#999';
+    }
+
+    // Columna de subtotal
+    const subtotalCell = document.createElement('td');
+    subtotalCell.style.textAlign = 'right';
+    subtotalCell.id = `subtotal-${linea.lineaId}`;
+    if (linea.productoData) {
+      const subtotal = linea.cantidad * (linea.productoData.price || 0);
+      subtotalCell.textContent = formatPrice(subtotal);
+      subtotalCell.style.fontWeight = 'bold';
+    } else {
+      subtotalCell.textContent = '-';
+      subtotalCell.style.color = '#999';
+    }
 
     // Columna de acciones
     const actionsCell = document.createElement('td');
@@ -240,10 +308,14 @@ function renderLineas() {
 
     row.appendChild(productCell);
     row.appendChild(cantidadCell);
+    row.appendChild(precioCell);
+    row.appendChild(subtotalCell);
     row.appendChild(actionsCell);
 
     tbody.appendChild(row);
   });
+
+  actualizarTotalGeneral();
 }
 
 // Eliminar línea

@@ -385,14 +385,23 @@
             <table id="detalleTable" class="detalle-table" style="display: none;">
               <thead>
                 <tr>
-                  <th style="width: 45%;">Producto (Codigo/Barras) 🔍</th>
-                  <th style="width: 15%; text-align: center;">Cantidad</th>
+                  <th style="width: 35%;">Producto (Codigo/Barras) 🔍</th>
+                  <th style="width: 12%; text-align: center;">Cantidad</th>
+                  <th style="width: 15%; text-align: right;">Precio Unit.</th>
+                  <th style="width: 15%; text-align: right;">Subtotal</th>
                   <th style="width: 10%; text-align: center;">Acciones</th>
                 </tr>
               </thead>
               <tbody id="detalleTableBody">
                 <!-- Las lineas se agregan dinamicamente -->
               </tbody>
+              <tfoot id="detalleTableFoot" style="display: none;">
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                  <td colspan="3" style="text-align: right; padding: 12px;">TOTAL:</td>
+                  <td id="totalGeneral" style="text-align: right; padding: 12px; font-size: 16px; color: #dc3545;">$0,00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
 
             <button type="button" id="btnAgregarLinea" class="btn-add-line">
