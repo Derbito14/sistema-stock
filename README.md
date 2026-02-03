@@ -85,12 +85,13 @@ SistemaStock/
 ### Gestión de Productos
 - **Alta de productos** con los siguientes campos:
   - Código de barras (opcional, único si se ingresa)
-  - Nombre del producto (obligatorio)
+  - Nombre del producto (obligatorio, único - no permite duplicados)
   - Familia/Categoría (opcional)
   - Unidad de medida: Unidad o Kilogramos
   - Precio
   - Stock mínimo (para alertas)
 - **Código interno autogenerado** (formato: P-000001, P-000002, etc.)
+- **Validación de nombre duplicado** (case insensitive)
 - **Soporte para productos sin código de barras** (múltiples productos pueden no tener código)
 - **Edición completa** de todos los campos
 - **Eliminación de productos** (solo si no tiene movimientos asociados)
@@ -101,8 +102,7 @@ SistemaStock/
 - **Ordenamiento** por código interno ascendente
 - **Indicador de rango** (ej: "Mostrando 1-10 de 45")
 - **Filtros múltiples**:
-  - Por código interno
-  - Por código de barras
+  - Por código (busca en código interno y código de barras)
   - Por nombre
   - Por familia
   - Por estado de stock (bajo mínimo, sin stock)
@@ -115,14 +115,18 @@ SistemaStock/
 
 ### Registro de Movimientos (Estilo Comprobante)
 - **Pantallas separadas**:
-  - **Ingresos**: Para compras y ajustes positivos (AC+)
-  - **Egresos**: Para ventas y ajustes negativos (AC-)
+  - **Ingresos**: Para compras y ajustes positivos (AC+) - Tipo "Compra" por defecto
+  - **Egresos**: Para ventas y ajustes negativos (AC-) - Tipo "Venta" por defecto
 - **Múltiples productos por comprobante**
 - **Número de comprobante automático** (formato: MOV-00001)
 - **Búsqueda de productos**:
   - Por código interno (ENTER para buscar)
   - Por código de barras
   - Por nombre (modal de búsqueda con F2 o botón 🔍)
+- **Visualización de precios**:
+  - Precio unitario por producto
+  - Subtotal por línea (cantidad × precio)
+  - **Total general** actualizado en tiempo real
 - **Validaciones**:
   - No permite egresos mayores al stock disponible
   - No permite productos duplicados en el mismo comprobante
@@ -133,10 +137,12 @@ SistemaStock/
 
 ### Historial de Movimientos
 - **Vista tabular** de todos los movimientos
+- **Columna Tipo** ubicada después del producto para mejor lectura
+- **Egresos en negativo** para facilitar neteo en Excel
 - **Filtros**:
   - Por tipo (Ingreso/Egreso)
   - Por rango de fechas
-  - Por código de producto
+  - Por código (busca en código interno y código de barras)
   - Por nombre de producto
 - **Fecha por defecto**: día actual
 - **Totales calculados**:
@@ -402,12 +408,16 @@ npm run clean-orphan
 - [x] Autenticación JWT
 - [x] CRUD de productos
 - [x] CRUD de familias/categorías
+- [x] Validación de nombre duplicado en productos
 - [x] Unidad de medida (unidad/kg)
 - [x] Productos sin código de barras
 - [x] Registro de ingresos (compras + ajustes positivos)
 - [x] Registro de egresos (ventas + ajustes negativos)
 - [x] Múltiples productos por comprobante
+- [x] Precios y totales en comprobantes de movimiento
 - [x] Historial de movimientos con filtros
+- [x] Egresos en negativo para facilitar neteo
+- [x] Filtro unificado de código (interno y barras)
 - [x] Exportación a CSV y Excel
 - [x] Paginación en listados
 - [x] Filtro por familia
