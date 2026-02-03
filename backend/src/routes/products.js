@@ -27,6 +27,18 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Verificar si ya existe un producto con el mismo nombre
+    const existingProductByName = await Product.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+      activo: true
+    });
+    if (existingProductByName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ya existe un producto con ese nombre'
+      });
+    }
+
     // Verificar si el código de barras ya existe (si se proporcionó)
     if (cleanBarcode) {
       const existingProduct = await Product.findOne({ barcode: cleanBarcode });
@@ -185,6 +197,19 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'El nombre del producto es requerido'
+      });
+    }
+
+    // Verificar si ya existe otro producto con el mismo nombre
+    const existingProductByName = await Product.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+      _id: { $ne: id },
+      activo: true
+    });
+    if (existingProductByName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ya existe otro producto con ese nombre'
       });
     }
 
