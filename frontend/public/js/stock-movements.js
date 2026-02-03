@@ -112,8 +112,9 @@ function renderMovements(movements) {
     const unidad = movement.producto?.unidad || 'unidad';
     const isDeleted = !movement.producto;
 
-    // Formatear cantidad según unidad
-    const cantidadFormatted = formatStock(movement.cantidad, unidad);
+    // Formatear cantidad según unidad (negativo para egresos)
+    const cantidadValue = movement.tipo === 'EGRESO' ? -movement.cantidad : movement.cantidad;
+    const cantidadFormatted = formatStock(cantidadValue, unidad);
 
     // Tipo con badge - usar tipoOriginal si existe, sino usar tipo
     const tipoDisplay = movement.tipoOriginal || movement.tipo;
@@ -130,10 +131,10 @@ function renderMovements(movements) {
     row.innerHTML = `
       <td><strong>${escapeHtml(codigoInterno)}</strong></td>
       <td>${escapeHtml(nombreProducto)}</td>
+      <td><span class="badge tipo-${tipoClass}">${tipoFormatted}</span></td>
       <td class="text-center"><strong>${cantidadFormatted}</strong></td>
       <td class="text-right">${precioFormatted}</td>
       <td>${escapeHtml(movement.comprobante)}</td>
-      <td><span class="badge tipo-${tipoClass}">${tipoFormatted}</span></td>
       <td>${formatDate(movement.fecha)}</td>
       <td>${getUsuarioName(movement.usuario)}</td>
     `;
@@ -215,10 +216,10 @@ function getCurrentMovements() {
       movements.push({
         codigoInterno: cells[0].textContent.trim(),
         nombreProducto: cells[1].textContent.trim(),
-        cantidad: cells[2].textContent.trim(),
-        precio: cells[3].textContent.trim(),
-        comprobante: cells[4].textContent.trim(),
-        tipo: cells[5].textContent.trim(),
+        tipo: cells[2].textContent.trim(),
+        cantidad: cells[3].textContent.trim(),
+        precio: cells[4].textContent.trim(),
+        comprobante: cells[5].textContent.trim(),
         fecha: cells[6].textContent.trim(),
         usuario: cells[7].textContent.trim()
       });
@@ -238,17 +239,17 @@ function exportToCSV() {
   }
 
   // Crear CSV
-  const headers = ['Código Interno', 'Nombre Producto', 'Cantidad', 'Precio', 'Comprobante', 'Tipo', 'Fecha', 'Usuario'];
+  const headers = ['Código Interno', 'Nombre Producto', 'Tipo', 'Cantidad', 'Precio', 'Comprobante', 'Fecha', 'Usuario'];
   let csv = headers.join(',') + '\n';
 
   movements.forEach(mov => {
     const row = [
       `"${mov.codigoInterno}"`,
       `"${mov.nombreProducto}"`,
+      `"${mov.tipo}"`,
       mov.cantidad,
       `"${mov.precio}"`,
       `"${mov.comprobante}"`,
-      mov.tipo,
       `"${mov.fecha}"`,
       `"${mov.usuario}"`
     ];
@@ -302,10 +303,10 @@ function exportToExcel() {
   html += '<thead><tr>';
   html += '<th>Código Interno</th>';
   html += '<th>Nombre Producto</th>';
+  html += '<th>Tipo</th>';
   html += '<th>Cantidad</th>';
   html += '<th>Precio</th>';
   html += '<th>Comprobante</th>';
-  html += '<th>Tipo</th>';
   html += '<th>Fecha</th>';
   html += '<th>Usuario</th>';
   html += '</tr></thead>';
@@ -316,10 +317,10 @@ function exportToExcel() {
     html += '<tr>';
     html += `<td>${mov.codigoInterno}</td>`;
     html += `<td>${mov.nombreProducto}</td>`;
+    html += `<td>${mov.tipo}</td>`;
     html += `<td>${mov.cantidad}</td>`;
     html += `<td>${mov.precio}</td>`;
     html += `<td>${mov.comprobante}</td>`;
-    html += `<td>${mov.tipo}</td>`;
     html += `<td>${mov.fecha}</td>`;
     html += `<td>${mov.usuario}</td>`;
     html += '</tr>';
