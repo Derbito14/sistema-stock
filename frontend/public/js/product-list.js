@@ -81,7 +81,6 @@ function setupRefreshButton() {
 // Configurar filtros
 function setupFilters() {
   const filtroCodigo = document.getElementById('filtroCodigo');
-  const filtroBarcode = document.getElementById('filtroBarcode');
   const filtroNombre = document.getElementById('filtroNombre');
   const filtroFamilia = document.getElementById('filtroFamilia');
   const filtroStock = document.getElementById('filtroStock');
@@ -99,7 +98,6 @@ function setupFilters() {
   };
 
   filtroCodigo.addEventListener('input', applyFiltersDebounced);
-  filtroBarcode.addEventListener('input', applyFiltersDebounced);
   filtroNombre.addEventListener('input', applyFiltersDebounced);
   filtroFamilia.addEventListener('change', () => { currentPage = 1; applyFilters(); });
   filtroStock.addEventListener('change', () => { currentPage = 1; applyFilters(); });
@@ -108,7 +106,6 @@ function setupFilters() {
   // Limpiar filtros
   btnLimpiar.addEventListener('click', () => {
     filtroCodigo.value = '';
-    filtroBarcode.value = '';
     filtroNombre.value = '';
     filtroFamilia.value = '';
     filtroStock.value = '';
@@ -121,21 +118,17 @@ function setupFilters() {
 // Aplicar filtros a los productos
 function applyFilters() {
   const filtroCodigo = document.getElementById('filtroCodigo').value.trim().toLowerCase();
-  const filtroBarcode = document.getElementById('filtroBarcode').value.trim().toLowerCase();
   const filtroNombre = document.getElementById('filtroNombre').value.trim().toLowerCase();
   const filtroFamilia = document.getElementById('filtroFamilia').value;
   const filtroStock = document.getElementById('filtroStock').value;
   const filtroActivo = document.getElementById('filtroActivo').value;
 
   let filtered = allProducts.filter(product => {
-    // Filtro por código interno
-    if (filtroCodigo && !product.codigoInterno.toLowerCase().includes(filtroCodigo)) {
-      return false;
-    }
-
-    // Filtro por código de barras
-    if (filtroBarcode) {
-      if (!product.barcode || !product.barcode.toLowerCase().includes(filtroBarcode)) {
+    // Filtro por código (interno o barras)
+    if (filtroCodigo) {
+      const matchCodigo = product.codigoInterno.toLowerCase().includes(filtroCodigo);
+      const matchBarcode = product.barcode && product.barcode.toLowerCase().includes(filtroCodigo);
+      if (!matchCodigo && !matchBarcode) {
         return false;
       }
     }
