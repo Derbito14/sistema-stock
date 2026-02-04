@@ -231,6 +231,7 @@ function renderLineas() {
     const cantidadInput = document.createElement('input');
     cantidadInput.type = 'number';
     cantidadInput.className = 'cantidad-input';
+    cantidadInput.id = `cantidad-${linea.lineaId}`;
     cantidadInput.min = '0.001';
     cantidadInput.value = linea.cantidad;
 
@@ -415,10 +416,9 @@ async function buscarProductoPorCodigo(lineaId, code) {
 
         // Focus en el campo de cantidad
         setTimeout(() => {
-          const cantidadInputs = document.querySelectorAll('.cantidad-input');
-          const index = comprobanteState.lineas.findIndex(l => l.lineaId === lineaId);
-          if (cantidadInputs[index]) {
-            cantidadInputs[index].select();
+          const cantidadInput = document.getElementById(`cantidad-${lineaId}`);
+          if (cantidadInput) {
+            cantidadInput.select();
           }
         }, 50);
       }
@@ -536,10 +536,9 @@ function selectProductFromModal(product) {
 
   // Focus en el campo de cantidad
   setTimeout(() => {
-    const cantidadInputs = document.querySelectorAll('.cantidad-input');
-    const index = comprobanteState.lineas.findIndex(l => l.lineaId === currentSearchLineIndex);
-    if (cantidadInputs[index]) {
-      cantidadInputs[index].select();
+    const cantidadInput = document.getElementById(`cantidad-${currentSearchLineIndex}`);
+    if (cantidadInput) {
+      cantidadInput.select();
     }
   }, 50);
 }
