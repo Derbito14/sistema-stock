@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes de Ganancias - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .reportes-container {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .filtros-section {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .filtros-section .form-group {
+      margin-bottom: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+
+    .stat-card.ventas {
+      background: #e3f2fd;
+      border-color: #2196F3;
+    }
+
+    .stat-card.costos {
+      background: #fff3e0;
+      border-color: #FF9800;
+    }
+
+    .stat-card.ganancia {
+      background: #e8f5e9;
+      border-color: #4CAF50;
+    }
+
+    .stat-card.ganancia.negativa {
+      background: #ffebee;
+      border-color: #f44336;
+    }
+
+    .stat-card.margen {
+      background: #f3e5f5;
+      border-color: #9C27B0;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .stat-card.ganancia .stat-value {
+      color: #2e7d32;
+    }
+
+    .stat-card.ganancia.negativa .stat-value {
+      color: #c62828;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detalle-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .detalle-table thead {
+      background: #f5f5f5;
+    }
+
+    .detalle-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .detalle-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .detalle-table tr:hover {
+      background: #f9f9f9;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-success {
+      color: #2e7d32;
+    }
+
+    .text-danger {
+      color: #c62828;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .page-header h2 {
+      color: #4CAF50;
+    }
+
+    .section-title {
+      margin: 24px 0 12px 0;
+      color: #333;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-cantidad {
+      background: #e0e0e0;
+      color: #333;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesion</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menu lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="family-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📁</span>
+            <span>Familias</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="ingresos.html" class="sidebar-link">
+            <span class="sidebar-icon">📥</span>
+            <span>Ingresos</span>
+          </a>
+          <a href="egresos.html" class="sidebar-link">
+            <span class="sidebar-icon">📤</span>
+            <span>Egresos</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+          <a href="lotes.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Lotes</span>
+          </a>
+          <a href="reportes.html" class="sidebar-link active">
+            <span class="sidebar-icon">💰</span>
+            <span>Reportes</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="page-header">
+          <h2>💰 Reportes de Ganancias</h2>
+          <p>Analisis de ventas, costos y ganancias</p>
+        </div>
+
+        <div class="reportes-container">
+          <!-- Filtros -->
+          <div class="filtros-section">
+            <div class="form-group">
+              <label for="fechaDesde">Desde</label>
+              <input type="date" id="fechaDesde">
+            </div>
+            <div class="form-group">
+              <label for="fechaHasta">Hasta</label>
+              <input type="date" id="fechaHasta">
+            </div>
+            <button id="btnFiltrar" class="btn-primary">Filtrar</button>
+            <button id="btnLimpiar" class="btn-secondary">Limpiar</button>
+          </div>
+
+          <!-- Loading -->
+          <div id="loadingState" class="loading-state">
+            <p>Cargando reportes...</p>
+          </div>
+
+          <!-- Sin datos -->
+          <div id="emptyState" class="empty-state" style="display: none;">
+            <h3>Sin datos de ventas</h3>
+            <p>No hay egresos con ganancias calculadas en el periodo seleccionado.</p>
+          </div>
+
+          <!-- Contenido del reporte -->
+          <div id="reporteContent" style="display: none;">
+            <!-- Estadísticas generales -->
+            <div class="stats-grid">
+              <div class="stat-card ventas">
+                <div class="stat-value" id="statVentaTotal">$0</div>
+                <div class="stat-label">Total Vendido</div>
+              </div>
+              <div class="stat-card costos">
+                <div class="stat-value" id="statCostoTotal">$0</div>
+                <div class="stat-label">Costo Total</div>
+              </div>
+              <div class="stat-card ganancia" id="cardGanancia">
+                <div class="stat-value" id="statGananciaTotal">$0</div>
+                <div class="stat-label">Ganancia Total</div>
+              </div>
+              <div class="stat-card margen">
+                <div class="stat-value" id="statMargenPromedio">0%</div>
+                <div class="stat-label">Margen Promedio</div>
+              </div>
+            </div>
+
+            <!-- Detalle por producto -->
+            <h3 class="section-title">
+              Detalle por Producto
+              <span class="badge-cantidad" id="cantidadProductos">0 productos</span>
+            </h3>
+            <table class="detalle-table">
+              <thead>
+                <tr>
+                  <th>Codigo</th>
+                  <th>Producto</th>
+                  <th class="text-center">Cant. Vendida</th>
+                  <th class="text-right">Venta Total</th>
+                  <th class="text-right">Costo Total</th>
+                  <th class="text-right">Ganancia</th>
+                  <th class="text-center">Margen %</th>
+                </tr>
+              </thead>
+              <tbody id="detalleTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/reportes.js"></script>
+</body>
+</html>

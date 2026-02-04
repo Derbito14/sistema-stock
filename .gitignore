@@ -16,3 +16,4 @@ Thumbs.db
 # Build folders (si llegas a usar)
 dist/
 build/
+# Remueve de Git pero no del disco

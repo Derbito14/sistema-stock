@@ -1,5 +1,7 @@
 // Cache de productos
 let productosCache = [];
+let productoSeleccionadoId = null;
+let searchTimeout = null;
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,26 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
-// Cargar productos para el selector
+// Cargar productos para el buscador
 async function loadProductos() {
-  const select = document.getElementById('selectProducto');
-
   try {
     const response = await authenticatedFetch(`${API_URL}/products`);
     const data = await response.json();
 
     if (data.success && data.products.length > 0) {
       productosCache = data.products;
-
       // Ordenar por nombre
       productosCache.sort((a, b) => a.name.localeCompare(b.name));
-
-      productosCache.forEach(product => {
-        const option = document.createElement('option');
-        option.value = product._id;
-        option.textContent = `${product.codigoInterno} - ${product.name}`;
-        select.appendChild(option);
-      });
     }
   } catch (error) {
     console.error('Error al cargar productos:', error);
@@ -35,14 +27,103 @@ async function loadProductos() {
 
 // Configurar event listeners
 function setupEventListeners() {
-  const select = document.getElementById('selectProducto');
-  select.addEventListener('change', handleProductoChange);
+  const searchInput = document.getElementById('searchProducto');
+  const searchResults = document.getElementById('searchResults');
+  const btnLimpiar = document.getElementById('btnLimpiarSeleccion');
+
+  // Buscar al escribir
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+
+    if (query.length < 2) {
+      searchResults.classList.remove('active');
+      return;
+    }
+
+    searchTimeout = setTimeout(() => {
+      buscarProductos(query);
+    }, 200);
+  });
+
+  // Cerrar resultados al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-container')) {
+      searchResults.classList.remove('active');
+    }
+  });
+
+  // Limpiar selección
+  btnLimpiar.addEventListener('click', limpiarSeleccion);
 }
 
-// Manejar cambio de producto
-async function handleProductoChange(e) {
-  const productoId = e.target.value;
+// Buscar productos
+function buscarProductos(query) {
+  const searchResults = document.getElementById('searchResults');
+  const queryLower = query.toLowerCase();
 
+  const resultados = productosCache.filter(p =>
+    p.codigoInterno.toLowerCase().includes(queryLower) ||
+    p.name.toLowerCase().includes(queryLower) ||
+    (p.barcode && p.barcode.toLowerCase().includes(queryLower))
+  ).slice(0, 10); // Máximo 10 resultados
+
+  if (resultados.length === 0) {
+    searchResults.innerHTML = '<div class="search-no-results">No se encontraron productos</div>';
+  } else {
+    searchResults.innerHTML = resultados.map(p => `
+      <div class="search-result-item" data-id="${p._id}" data-codigo="${p.codigoInterno}" data-nombre="${escapeHtml(p.name)}">
+        <div class="search-result-codigo">${escapeHtml(p.codigoInterno)}</div>
+        <div class="search-result-nombre">${escapeHtml(p.name)}</div>
+      </div>
+    `).join('');
+
+    // Event listeners para cada resultado
+    searchResults.querySelectorAll('.search-result-item').forEach(item => {
+      item.addEventListener('click', () => {
+        seleccionarProducto(
+          item.dataset.id,
+          item.dataset.codigo,
+          item.dataset.nombre
+        );
+      });
+    });
+  }
+
+  searchResults.classList.add('active');
+}
+
+// Seleccionar producto
+function seleccionarProducto(id, codigo, nombre) {
+  productoSeleccionadoId = id;
+
+  // Mostrar producto seleccionado
+  document.getElementById('selCodigo').textContent = codigo;
+  document.getElementById('selNombre').textContent = nombre;
+  document.getElementById('productoSeleccionado').classList.add('active');
+
+  // Limpiar búsqueda
+  document.getElementById('searchProducto').value = '';
+  document.getElementById('searchResults').classList.remove('active');
+
+  // Cargar lotes
+  cargarLotesProducto(id);
+}
+
+// Limpiar selección
+function limpiarSeleccion() {
+  productoSeleccionadoId = null;
+  document.getElementById('productoSeleccionado').classList.remove('active');
+  document.getElementById('searchProducto').value = '';
+
+  // Mostrar estado inicial
+  document.getElementById('initialState').style.display = 'block';
+  document.getElementById('statsContainer').style.display = 'none';
+  document.getElementById('noLotesState').style.display = 'none';
+}
+
+// Cargar lotes del producto
+async function cargarLotesProducto(productoId) {
   const initialState = document.getElementById('initialState');
   const loadingState = document.getElementById('loadingState');
   const noLotesState = document.getElementById('noLotesState');
