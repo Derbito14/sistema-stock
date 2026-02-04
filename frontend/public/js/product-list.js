@@ -392,6 +392,55 @@ function setupEditForm() {
       }
     });
   }
+
+  // Event listeners para cálculo de precio de venta
+  const precioCompraInput = document.getElementById('editPrecioCompraBase');
+  const margenInput = document.getElementById('editMargenGananciaPorcentaje');
+  const precioManualCheckbox = document.getElementById('editPrecioVentaManual');
+
+  if (precioCompraInput) {
+    precioCompraInput.addEventListener('input', calcularPrecioVentaEdit);
+  }
+  if (margenInput) {
+    margenInput.addEventListener('input', calcularPrecioVentaEdit);
+  }
+  if (precioManualCheckbox) {
+    precioManualCheckbox.addEventListener('change', actualizarEstadoPrecioVentaEdit);
+  }
+}
+
+// Calcular precio de venta en el modal de edición
+function calcularPrecioVentaEdit() {
+  const precioCompra = parseFloat(document.getElementById('editPrecioCompraBase').value) || 0;
+  const margen = parseFloat(document.getElementById('editMargenGananciaPorcentaje').value) || 0;
+  const precioVentaInput = document.getElementById('editPrecioVentaBase');
+  const precioManualCheckbox = document.getElementById('editPrecioVentaManual');
+  const precioSugeridoSpan = document.getElementById('editPrecioSugerido');
+
+  if (precioCompra > 0) {
+    const precioVentaSugerido = precioCompra + (precioCompra * margen / 100);
+    precioSugeridoSpan.textContent = `(Sugerido: $${precioVentaSugerido.toFixed(2)})`;
+
+    // Si no es manual, actualizar el precio de venta automáticamente
+    if (!precioManualCheckbox.checked) {
+      precioVentaInput.value = precioVentaSugerido.toFixed(2);
+    }
+  } else {
+    precioSugeridoSpan.textContent = '';
+  }
+}
+
+// Actualizar estado del input de precio de venta según checkbox
+function actualizarEstadoPrecioVentaEdit() {
+  const precioVentaInput = document.getElementById('editPrecioVentaBase');
+  const precioManualCheckbox = document.getElementById('editPrecioVentaManual');
+
+  if (precioManualCheckbox.checked) {
+    precioVentaInput.style.backgroundColor = '';
+  } else {
+    precioVentaInput.style.backgroundColor = '#f5f5f5';
+    calcularPrecioVentaEdit();
+  }
 }
 
 async function openEditModal(productId) {
@@ -435,10 +484,17 @@ function fillEditForm(product) {
   document.getElementById('editName').value = product.name;
   document.getElementById('editFamilia').value = product.familia ? (product.familia._id || product.familia) : '';
   document.getElementById('editUnidad').value = product.unidad || 'unidad';
-  document.getElementById('editPrice').value = product.price;
+  document.getElementById('editPrecioCompraBase').value = product.precioCompraBase || 0;
+  document.getElementById('editMargenGananciaPorcentaje').value = product.margenGananciaPorcentaje || 0;
+  document.getElementById('editPrecioVentaBase').value = product.precioVentaBase || product.price || 0;
+  document.getElementById('editPrecioVentaManual').checked = product.precioVentaManual || false;
   document.getElementById('editMinStock').value = product.minStock;
   document.getElementById('editBarcode').value = product.barcode || '';
   document.getElementById('editStock').value = formatStock(product.stock || 0, product.unidad);
+
+  // Actualizar estado visual del precio de venta
+  actualizarEstadoPrecioVentaEdit();
+  calcularPrecioVentaEdit();
 }
 
 async function handleEditSubmit(e) {
@@ -448,7 +504,10 @@ async function handleEditSubmit(e) {
   const name = document.getElementById('editName').value.trim();
   const familia = document.getElementById('editFamilia').value;
   const unidad = document.getElementById('editUnidad').value;
-  const price = parseFloat(document.getElementById('editPrice').value);
+  const precioCompraBase = parseFloat(document.getElementById('editPrecioCompraBase').value) || 0;
+  const margenGananciaPorcentaje = parseFloat(document.getElementById('editMargenGananciaPorcentaje').value) || 0;
+  const precioVentaBase = parseFloat(document.getElementById('editPrecioVentaBase').value) || 0;
+  const precioVentaManual = document.getElementById('editPrecioVentaManual').checked;
   const minStock = parseInt(document.getElementById('editMinStock').value);
   const barcode = document.getElementById('editBarcode').value.trim();
 
@@ -466,8 +525,8 @@ async function handleEditSubmit(e) {
     return;
   }
 
-  if (isNaN(price) || price < 0) {
-    errorEl.textContent = 'El precio debe ser un número positivo';
+  if (isNaN(precioVentaBase) || precioVentaBase < 0) {
+    errorEl.textContent = 'El precio de venta debe ser un número positivo';
     errorEl.style.display = 'block';
     return;
   }
@@ -491,7 +550,11 @@ async function handleEditSubmit(e) {
         name,
         familia: familia || null,
         unidad,
-        price,
+        price: precioVentaBase,
+        precioCompraBase,
+        margenGananciaPorcentaje,
+        precioVentaBase,
+        precioVentaManual,
         minStock,
         barcode: barcode || undefined
       })
