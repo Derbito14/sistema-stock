@@ -53,6 +53,29 @@ const stockMovementSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'El usuario es requerido']
   },
+  precioCompra: {
+    type: Number,
+    min: [0, 'El precio de compra no puede ser negativo'],
+    default: null
+  },
+  costoTotalReal: {
+    type: Number,
+    min: [0, 'El costo total no puede ser negativo'],
+    default: null
+  },
+  precioVentaTotal: {
+    type: Number,
+    min: [0, 'El precio de venta no puede ser negativo'],
+    default: null
+  },
+  gananciaTotal: {
+    type: Number,
+    default: null
+  },
+  loteProcesado: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

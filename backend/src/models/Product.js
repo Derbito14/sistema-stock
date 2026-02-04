@@ -35,6 +35,26 @@ const productSchema = new mongoose.Schema({
     min: [0, 'El precio no puede ser negativo'],
     default: 0
   },
+  precioCompraBase: {
+    type: Number,
+    min: [0, 'El precio de compra no puede ser negativo'],
+    default: 0
+  },
+  precioVentaBase: {
+    type: Number,
+    min: [0, 'El precio de venta no puede ser negativo'],
+    default: 0
+  },
+  margenGananciaPorcentaje: {
+    type: Number,
+    min: [0, 'El margen no puede ser negativo'],
+    max: [1000, 'El margen no puede superar 1000%'],
+    default: 0
+  },
+  precioVentaManual: {
+    type: Boolean,
+    default: false
+  },
   minStock: {
     type: Number,
     required: [true, 'El stock mínimo es requerido'],
@@ -97,6 +117,15 @@ productSchema.pre('save', function(next) {
   if (this.barcode === '' || this.barcode === null) {
     this.barcode = undefined;
   }
+
+  // Si no es precio manual, calcular precio de venta automáticamente
+  if (!this.precioVentaManual && this.precioCompraBase > 0) {
+    this.precioVentaBase = this.precioCompraBase + (this.precioCompraBase * this.margenGananciaPorcentaje / 100);
+    this.price = this.precioVentaBase; // compatibilidad con campo existente
+  } else if (this.precioVentaManual && this.precioVentaBase > 0) {
+    this.price = this.precioVentaBase; // mantener sincronizado
+  }
+
   next();
 });
 

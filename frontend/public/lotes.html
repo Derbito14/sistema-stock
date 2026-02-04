@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotes de Compra - Sistema de Stock</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .lotes-container {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .selector-producto {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .selector-producto label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .selector-producto select {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      font-size: 14px;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .selector-producto select:focus {
+      outline: none;
+      border-color: #2196F3;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+
+    .stat-card.primary {
+      background: #e3f2fd;
+      border-color: #2196F3;
+    }
+
+    .stat-card.success {
+      background: #e8f5e9;
+      border-color: #4CAF50;
+    }
+
+    .stat-card.warning {
+      background: #fff3e0;
+      border-color: #FF9800;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .lotes-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .lotes-table thead {
+      background: #f5f5f5;
+    }
+
+    .lotes-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .lotes-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .lotes-table tr:hover {
+      background: #f9f9f9;
+    }
+
+    .badge-estado {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-estado.activo {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .badge-estado.agotado {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state h3 {
+      margin-bottom: 8px;
+      color: #666;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .fifo-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .fifo-indicator.next {
+      background: #4CAF50;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .page-header h2 {
+      color: #FF9800;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="navbar">
+      <div class="navbar-logo">
+        <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>Sistema de Stock</h1>
+      </div>
+      <div class="navbar-right">
+        <div class="user-info">
+          <div class="user-icon" id="userIcon">A</div>
+          <span id="username">Cargando...</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Cerrar Sesion</button>
+      </div>
+    </nav>
+
+    <div class="dashboard-layout">
+      <!-- Menu lateral -->
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="dashboard.html" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>Inicio</span>
+          </a>
+          <a href="family-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📁</span>
+            <span>Familias</span>
+          </a>
+          <a href="product-form.html" class="sidebar-link">
+            <span class="sidebar-icon">📦</span>
+            <span>Alta de Productos</span>
+          </a>
+          <a href="product-list.html" class="sidebar-link">
+            <span class="sidebar-icon">📋</span>
+            <span>Listado de Productos</span>
+          </a>
+          <a href="ingresos.html" class="sidebar-link">
+            <span class="sidebar-icon">📥</span>
+            <span>Ingresos</span>
+          </a>
+          <a href="egresos.html" class="sidebar-link">
+            <span class="sidebar-icon">📤</span>
+            <span>Egresos</span>
+          </a>
+          <a href="stock-movements.html" class="sidebar-link">
+            <span class="sidebar-icon">📊</span>
+            <span>Ver Movimientos</span>
+          </a>
+          <a href="lotes.html" class="sidebar-link active">
+            <span class="sidebar-icon">📦</span>
+            <span>Lotes</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Contenido principal -->
+      <main class="main-content">
+        <div class="page-header">
+          <h2>📦 Lotes de Compra</h2>
+          <p>Visualizar lotes por producto con sistema FIFO</p>
+        </div>
+
+        <div class="lotes-container">
+          <!-- Selector de producto -->
+          <div class="selector-producto">
+            <label for="selectProducto">Seleccionar Producto</label>
+            <select id="selectProducto">
+              <option value="">-- Seleccione un producto --</option>
+            </select>
+          </div>
+
+          <!-- Estado inicial -->
+          <div id="initialState" class="empty-state">
+            <h3>Seleccione un producto</h3>
+            <p>Elija un producto del listado para ver sus lotes de compra</p>
+          </div>
+
+          <!-- Loading -->
+          <div id="loadingState" class="loading-state" style="display: none;">
+            <p>Cargando lotes...</p>
+          </div>
+
+          <!-- Sin lotes -->
+          <div id="noLotesState" class="empty-state" style="display: none;">
+            <h3>Sin lotes registrados</h3>
+            <p>Este producto no tiene lotes de compra. Los lotes se crean automaticamente al registrar ingresos.</p>
+          </div>
+
+          <!-- Estadísticas -->
+          <div id="statsContainer" style="display: none;">
+            <div class="stats-grid">
+              <div class="stat-card primary">
+                <div class="stat-value" id="statStock">0</div>
+                <div class="stat-label">Stock Total</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="statCostoPromedio">$0</div>
+                <div class="stat-label">Costo Promedio</div>
+              </div>
+              <div class="stat-card success">
+                <div class="stat-value" id="statValorStock">$0</div>
+                <div class="stat-label">Valor en Stock</div>
+              </div>
+              <div class="stat-card warning">
+                <div class="stat-value" id="statLotesActivos">0</div>
+                <div class="stat-label">Lotes Activos</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="statPrecioVenta">$0</div>
+                <div class="stat-label">Precio Venta</div>
+              </div>
+            </div>
+
+            <!-- Tabla de lotes -->
+            <h3 style="margin-bottom: 12px; color: #333;">Lotes ordenados por FIFO (primero en salir primero)</h3>
+            <table class="lotes-table">
+              <thead>
+                <tr>
+                  <th style="width: 5%;"></th>
+                  <th style="width: 15%;">Fecha Compra</th>
+                  <th style="width: 15%;">Comprobante</th>
+                  <th style="width: 12%;" class="text-center">Cant. Inicial</th>
+                  <th style="width: 12%;" class="text-center">Cant. Restante</th>
+                  <th style="width: 13%;" class="text-right">Precio Compra</th>
+                  <th style="width: 13%;" class="text-right">Valor Restante</th>
+                  <th style="width: 10%;" class="text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="lotesTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/lotes.js"></script>
+</body>
+</html>

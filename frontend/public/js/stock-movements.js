@@ -121,11 +121,21 @@ function renderMovements(movements) {
     const tipoFormatted = formatTipoDisplay(tipoDisplay);
     const tipoClass = movement.tipo.toLowerCase();
 
-    // Formatear precio
-    const precioFormatted = new Intl.NumberFormat('es-AR', {
+    // Formatear precio (para egresos con FIFO, mostrar ganancia si está disponible)
+    let precioFormatted = new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: 'ARS'
     }).format(precio);
+
+    // Si es egreso y tiene ganancia calculada, mostrarla
+    if (movement.tipo === 'EGRESO' && movement.gananciaTotal !== null && movement.gananciaTotal !== undefined) {
+      const gananciaFormatted = new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS'
+      }).format(movement.gananciaTotal);
+      const gananciaClass = movement.gananciaTotal >= 0 ? 'text-success' : 'text-danger';
+      precioFormatted += ` <span class="${gananciaClass}" style="font-size: 11px;">(${movement.gananciaTotal >= 0 ? '+' : ''}${gananciaFormatted})</span>`;
+    }
 
     row.className = isDeleted ? 'product-deleted' : '';
     row.innerHTML = `

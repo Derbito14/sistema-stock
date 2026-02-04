@@ -1,8 +1,11 @@
 const express = require('express');
 const StockMovement = require('../models/StockMovement');
 const Product = require('../models/Product');
+const BatchLot = require('../models/BatchLot');
+const SaleDetail = require('../models/SaleDetail');
 const { protect } = require('../middleware/auth');
 const { calculateStock } = require('../utils/stockCalculator');
+const LoteService = require('../services/LoteService');
 
 const router = express.Router();
 
@@ -84,6 +87,7 @@ router.post('/', async (req, res) => {
     // Validar productos
     const movementsToCreate = [];
     const errors = [];
+    const productDataMap = {}; // Guardar datos de productos para después
 
     for (let i = 0; i < productos.length; i++) {
       const item = productos[i];
@@ -100,6 +104,16 @@ router.post('/', async (req, res) => {
         continue;
       }
 
+      productDataMap[item.productoId] = product;
+
+      // Para INGRESO, validar precio de compra
+      if (tipo === 'INGRESO') {
+        if (item.precioCompra === undefined || item.precioCompra === null || item.precioCompra < 0) {
+          // Usar precio de compra base del producto como fallback
+          item.precioCompra = product.precioCompraBase || 0;
+        }
+      }
+
       // Para EGRESO, verificar stock suficiente
       if (tipo === 'EGRESO') {
         const currentStock = await calculateStock(item.productoId);
@@ -113,10 +127,12 @@ router.post('/', async (req, res) => {
         comprobante,
         producto: item.productoId,
         tipo,
-        tipoOriginal: tipoOriginal || tipo, // Guardar tipo original si existe
+        tipoOriginal: tipoOriginal || tipo,
         cantidad: item.cantidad,
         observacion: observacion || '',
-        usuario: req.user._id
+        usuario: req.user._id,
+        precioCompra: tipo === 'INGRESO' ? item.precioCompra : null,
+        loteProcesado: false
       });
     }
 
@@ -138,11 +154,55 @@ router.post('/', async (req, res) => {
     // Crear todos los movimientos
     const movements = await StockMovement.insertMany(movementsToCreate);
 
+    // Procesar lotes según el tipo de movimiento
+    for (let i = 0; i < movements.length; i++) {
+      const movement = movements[i];
+      const item = productos[i];
+      const product = productDataMap[item.productoId];
+
+      if (tipo === 'INGRESO') {
+        // Crear lote para cada producto
+        await LoteService.crearLote({
+          productoId: item.productoId,
+          movimientoId: movement._id,
+          cantidad: item.cantidad,
+          precioCompra: item.precioCompra || product.precioCompraBase || 0,
+          fecha: movement.fecha,
+          observacion: observacion || ''
+        });
+
+        // Marcar movimiento como procesado
+        await StockMovement.findByIdAndUpdate(movement._id, { loteProcesado: true });
+
+      } else if (tipo === 'EGRESO') {
+        // Verificar si el producto tiene lotes
+        const tieneLotes = await LoteService.tieneLotes(item.productoId);
+
+        if (tieneLotes) {
+          // Procesar egreso con FIFO
+          const resultado = await LoteService.procesarEgresoFIFO({
+            productoId: item.productoId,
+            movimientoId: movement._id,
+            cantidad: item.cantidad,
+            precioVenta: product.precioVentaBase || product.price || 0
+          });
+
+          // Actualizar movimiento con totales
+          await StockMovement.findByIdAndUpdate(movement._id, {
+            costoTotalReal: resultado.costoTotalReal,
+            precioVentaTotal: resultado.precioVentaTotal,
+            gananciaTotal: resultado.gananciaTotal,
+            loteProcesado: true
+          });
+        }
+      }
+    }
+
     // Poblar datos
     const populatedMovements = await StockMovement.find({
       _id: { $in: movements.map(m => m._id) }
     })
-    .populate('producto', 'codigoInterno barcode name unidad')
+    .populate('producto', 'codigoInterno barcode name unidad precioVentaBase')
     .populate('usuario', 'username');
 
     res.status(201).json({
@@ -294,6 +354,87 @@ router.get('/by-comprobante/:comprobante', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener los movimientos',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/stock-movements/lotes/:productoId
+// @desc    Obtener lotes de un producto con estadísticas
+// @access  Private
+router.get('/lotes/:productoId', async (req, res) => {
+  try {
+    const { productoId } = req.params;
+    const { soloActivos } = req.query;
+
+    // Obtener estadísticas
+    const estadisticas = await LoteService.getEstadisticasLotes(productoId);
+
+    // Obtener lotes
+    const lotes = await LoteService.getLotesProducto(
+      productoId,
+      soloActivos === 'true'
+    );
+
+    res.json({
+      success: true,
+      estadisticas,
+      lotes
+    });
+  } catch (error) {
+    console.error('Error al obtener lotes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener los lotes',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/stock-movements/detalles-venta/:movimientoId
+// @desc    Obtener detalles de venta de un movimiento de egreso
+// @access  Private
+router.get('/detalles-venta/:movimientoId', async (req, res) => {
+  try {
+    const { movimientoId } = req.params;
+
+    // Verificar que el movimiento existe
+    const movimiento = await StockMovement.findById(movimientoId)
+      .populate('producto', 'codigoInterno name');
+
+    if (!movimiento) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movimiento no encontrado'
+      });
+    }
+
+    if (movimiento.tipo !== 'EGRESO') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo los movimientos de egreso tienen detalles de venta'
+      });
+    }
+
+    const detalles = await LoteService.getDetallesVenta(movimientoId);
+
+    res.json({
+      success: true,
+      movimiento: {
+        comprobante: movimiento.comprobante,
+        producto: movimiento.producto,
+        cantidad: movimiento.cantidad,
+        costoTotalReal: movimiento.costoTotalReal,
+        precioVentaTotal: movimiento.precioVentaTotal,
+        gananciaTotal: movimiento.gananciaTotal
+      },
+      detalles
+    });
+  } catch (error) {
+    console.error('Error al obtener detalles de venta:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener los detalles de venta',
       error: error.message
     });
   }

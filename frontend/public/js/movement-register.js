@@ -1,6 +1,6 @@
 // Estado del comprobante
 let comprobanteState = {
-  lineas: [], // { lineaId, productoId, productoData, cantidad }
+  lineas: [], // { lineaId, productoId, productoData, cantidad, precioCompra }
   nextLineaId: 1
 };
 
@@ -91,6 +91,11 @@ async function loadAllProducts() {
   }
 }
 
+// Verificar si estamos en modo ingreso
+function esIngreso() {
+  return typeof MODO_MOVIMIENTO !== 'undefined' && MODO_MOVIMIENTO === 'INGRESO';
+}
+
 // Agregar nueva línea
 function agregarLinea() {
   const lineaId = comprobanteState.nextLineaId++;
@@ -99,7 +104,8 @@ function agregarLinea() {
     lineaId,
     productoId: null,
     productoData: null,
-    cantidad: 1
+    cantidad: 1,
+    precioCompra: 0 // Para ingresos
   });
 
   renderLineas();
@@ -136,7 +142,10 @@ function actualizarTotalGeneral() {
   tfoot.style.display = 'table-footer-group';
 
   const total = lineasConProducto.reduce((sum, linea) => {
-    const precio = linea.productoData?.price || 0;
+    // Para ingresos, usar precioCompra. Para egresos, usar precio de venta
+    const precio = esIngreso()
+      ? (linea.precioCompra || 0)
+      : (linea.productoData?.price || linea.productoData?.precioVentaBase || 0);
     return sum + (linea.cantidad * precio);
   }, 0);
 
@@ -243,7 +252,10 @@ function renderLineas() {
       // Actualizar subtotal de esta línea
       const subtotalCell = document.getElementById(`subtotal-${linea.lineaId}`);
       if (subtotalCell && linea.productoData) {
-        const subtotal = linea.cantidad * (linea.productoData.price || 0);
+        const precio = esIngreso()
+          ? (linea.precioCompra || linea.productoData.precioCompraBase || 0)
+          : (linea.productoData.precioVentaBase || linea.productoData.price || 0);
+        const subtotal = linea.cantidad * precio;
         subtotalCell.textContent = formatPrice(subtotal);
       }
       actualizarTotalGeneral();
@@ -260,7 +272,10 @@ function renderLineas() {
         // Actualizar subtotal
         const subtotalCell = document.getElementById(`subtotal-${linea.lineaId}`);
         if (subtotalCell && linea.productoData) {
-          const subtotal = linea.cantidad * (linea.productoData.price || 0);
+          const precio = esIngreso()
+            ? (linea.precioCompra || linea.productoData.precioCompraBase || 0)
+            : (linea.productoData.precioVentaBase || linea.productoData.price || 0);
+          const subtotal = linea.cantidad * precio;
           subtotalCell.textContent = formatPrice(subtotal);
         }
         actualizarTotalGeneral();
@@ -271,14 +286,44 @@ function renderLineas() {
 
     cantidadCell.appendChild(cantidadInput);
 
-    // Columna de precio unitario
+    // Columna de precio (compra para ingresos, venta para egresos)
     const precioCell = document.createElement('td');
     precioCell.style.textAlign = 'right';
-    if (linea.productoData) {
-      precioCell.textContent = formatPrice(linea.productoData.price || 0);
+
+    if (esIngreso()) {
+      // Para ingresos: input editable de precio de compra
+      const precioInput = document.createElement('input');
+      precioInput.type = 'number';
+      precioInput.className = 'cantidad-input';
+      precioInput.style.textAlign = 'right';
+      precioInput.min = '0';
+      precioInput.step = '0.01';
+      precioInput.value = linea.precioCompra || (linea.productoData?.precioCompraBase || 0);
+      precioInput.placeholder = '0.00';
+      precioInput.id = `precioCompra-${linea.lineaId}`;
+
+      precioInput.addEventListener('change', (e) => {
+        const newPrecio = parseFloat(e.target.value) || 0;
+        linea.precioCompra = Math.max(0, newPrecio);
+        e.target.value = linea.precioCompra.toFixed(2);
+        // Actualizar subtotal
+        const subtotalCell = document.getElementById(`subtotal-${linea.lineaId}`);
+        if (subtotalCell) {
+          const subtotal = linea.cantidad * linea.precioCompra;
+          subtotalCell.textContent = formatPrice(subtotal);
+        }
+        actualizarTotalGeneral();
+      });
+
+      precioCell.appendChild(precioInput);
     } else {
-      precioCell.textContent = '-';
-      precioCell.style.color = '#999';
+      // Para egresos: mostrar precio de venta
+      if (linea.productoData) {
+        precioCell.textContent = formatPrice(linea.productoData.precioVentaBase || linea.productoData.price || 0);
+      } else {
+        precioCell.textContent = '-';
+        precioCell.style.color = '#999';
+      }
     }
 
     // Columna de subtotal
@@ -286,7 +331,10 @@ function renderLineas() {
     subtotalCell.style.textAlign = 'right';
     subtotalCell.id = `subtotal-${linea.lineaId}`;
     if (linea.productoData) {
-      const subtotal = linea.cantidad * (linea.productoData.price || 0);
+      const precio = esIngreso()
+        ? (linea.precioCompra || linea.productoData.precioCompraBase || 0)
+        : (linea.productoData.precioVentaBase || linea.productoData.price || 0);
+      const subtotal = linea.cantidad * precio;
       subtotalCell.textContent = formatPrice(subtotal);
       subtotalCell.style.fontWeight = 'bold';
     } else {
@@ -358,6 +406,10 @@ async function buscarProductoPorCodigo(lineaId, code) {
           ...data.product,
           stock: stockActual
         };
+        // Para ingresos, establecer precio de compra base del producto
+        if (esIngreso()) {
+          linea.precioCompra = data.product.precioCompraBase || 0;
+        }
         renderLineas();
         hideMessage('errorMessage');
 
@@ -472,6 +524,10 @@ function selectProductFromModal(product) {
   if (linea) {
     linea.productoId = product._id;
     linea.productoData = product;
+    // Para ingresos, establecer precio de compra base del producto
+    if (esIngreso()) {
+      linea.precioCompra = product.precioCompraBase || 0;
+    }
     renderLineas();
     hideMessage('errorMessage');
   }
@@ -577,7 +633,9 @@ async function guardarComprobante() {
       observacion: observaciones || `${tipo} - ${fecha}`,
       productos: lineasValidas.map(l => ({
         productoId: l.productoId,
-        cantidad: l.cantidad
+        cantidad: l.cantidad,
+        // Solo enviar precioCompra para ingresos
+        precioCompra: esIngreso() ? (l.precioCompra || l.productoData?.precioCompraBase || 0) : undefined
       }))
     };
 

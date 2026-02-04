@@ -14,7 +14,10 @@ router.use(protect);
 // @access  Private
 router.post('/', async (req, res) => {
   try {
-    const { barcode, name, price, minStock, familia, unidad } = req.body;
+    const {
+      barcode, name, price, minStock, familia, unidad,
+      precioCompraBase, precioVentaBase, margenGananciaPorcentaje, precioVentaManual
+    } = req.body;
 
     // Limpiar barcode: convertir vacío/null a undefined
     const cleanBarcode = (barcode && barcode.trim() !== '') ? barcode.trim() : undefined;
@@ -51,14 +54,22 @@ router.post('/', async (req, res) => {
     }
 
     // Crear el producto (codigoInterno se genera automáticamente)
-    // NO incluir barcode si está vacío (para que sparse index funcione)
     const productData = {
       name,
       price: price || 0,
       minStock: minStock || 0,
       familia: familia || null,
-      unidad: unidad || 'unidad'
+      unidad: unidad || 'unidad',
+      precioCompraBase: precioCompraBase || 0,
+      margenGananciaPorcentaje: margenGananciaPorcentaje || 0,
+      precioVentaManual: precioVentaManual || false
     };
+
+    // Si es precio manual, usar el precioVentaBase proporcionado
+    if (precioVentaManual && precioVentaBase !== undefined) {
+      productData.precioVentaBase = precioVentaBase;
+      productData.price = precioVentaBase;
+    }
 
     // Solo agregar barcode si tiene valor
     if (cleanBarcode) {
@@ -127,6 +138,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   POST /api/products/calcular-precio-venta
+// @desc    Calcular precio de venta sugerido basado en compra y margen
+// @access  Private
+router.post('/calcular-precio-venta', async (req, res) => {
+  try {
+    const { precioCompra, margenPorcentaje } = req.body;
+
+    if (precioCompra === undefined || margenPorcentaje === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Precio de compra y margen son requeridos'
+      });
+    }
+
+    const precioVentaSugerido = precioCompra + (precioCompra * margenPorcentaje / 100);
+
+    res.json({
+      success: true,
+      precioVentaSugerido: Math.round(precioVentaSugerido * 100) / 100
+    });
+  } catch (error) {
+    console.error('Error al calcular precio:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al calcular el precio',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/products/search
 // @desc    Buscar producto por código de barras o código interno
 // @access  Private
@@ -177,7 +218,10 @@ router.get('/search', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, minStock, barcode, familia, unidad } = req.body;
+    const {
+      name, price, minStock, barcode, familia, unidad,
+      precioCompraBase, precioVentaBase, margenGananciaPorcentaje, precioVentaManual
+    } = req.body;
 
     // Limpiar barcode: convertir vacío/null a undefined
     const cleanBarcode = (barcode && barcode.trim() !== '') ? barcode.trim() : undefined;
@@ -228,13 +272,35 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    // Actualizar solo los campos permitidos
+    // Actualizar campos básicos
     product.name = name;
-    product.price = price !== undefined ? price : product.price;
     product.minStock = minStock !== undefined ? minStock : product.minStock;
     product.familia = familia !== undefined ? (familia || null) : product.familia;
     product.unidad = unidad || product.unidad;
     product.updatedAt = Date.now();
+
+    // Actualizar campos de precios
+    if (precioCompraBase !== undefined) {
+      product.precioCompraBase = precioCompraBase;
+    }
+    if (margenGananciaPorcentaje !== undefined) {
+      product.margenGananciaPorcentaje = margenGananciaPorcentaje;
+    }
+    if (precioVentaManual !== undefined) {
+      product.precioVentaManual = precioVentaManual;
+    }
+
+    // Si es precio manual, actualizar precioVentaBase directamente
+    if (product.precioVentaManual) {
+      if (precioVentaBase !== undefined) {
+        product.precioVentaBase = precioVentaBase;
+        product.price = precioVentaBase;
+      } else if (price !== undefined) {
+        product.price = price;
+        product.precioVentaBase = price;
+      }
+    }
+    // Si no es manual, el pre-save calculará el precio automáticamente
 
     // Manejar barcode: si está vacío, eliminarlo del documento
     if (cleanBarcode) {
