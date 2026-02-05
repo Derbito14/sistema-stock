@@ -39,13 +39,13 @@ async function cargarDatosFiltros() {
 
     if (familiasData.success) {
       familiasCache = familiasData.families;
-      familiasCache.sort((a, b) => a.name.localeCompare(b.name));
+      familiasCache.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
       // Poblar select de familias
       familiasCache.forEach(familia => {
         const option = document.createElement('option');
         option.value = familia._id;
-        option.textContent = familia.name;
+        option.textContent = familia.nombre;
         filtroFamilia.appendChild(option);
       });
     }
@@ -197,7 +197,6 @@ async function cargarReporte() {
     params.append('tipo', 'EGRESO');
     if (fechaDesde) params.append('fechaDesde', fechaDesde);
     if (fechaHasta) params.append('fechaHasta', fechaHasta);
-    if (productoSeleccionadoId) params.append('producto', productoSeleccionadoId);
     params.append('limit', '1000');
 
     const response = await authenticatedFetch(`${API_URL}/stock-movements?${params.toString()}`);
@@ -210,6 +209,13 @@ async function cargarReporte() {
       let movimientosConGanancia = data.movements.filter(m =>
         m.gananciaTotal !== null && m.gananciaTotal !== undefined
       );
+
+      // Filtrar por producto si esta seleccionado
+      if (productoSeleccionadoId) {
+        movimientosConGanancia = movimientosConGanancia.filter(m =>
+          m.producto?._id === productoSeleccionadoId
+        );
+      }
 
       // Filtrar por familia si esta seleccionada
       if (familiaId) {
