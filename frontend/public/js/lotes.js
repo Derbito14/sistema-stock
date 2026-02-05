@@ -4,8 +4,19 @@ let productoSeleccionadoId = null;
 let searchTimeout = null;
 
 // Inicializar
-document.addEventListener('DOMContentLoaded', () => {
-  loadProductos();
+document.addEventListener('DOMContentLoaded', async () => {
+  const searchInput = document.getElementById('searchProducto');
+
+  // Deshabilitar input mientras cargan los productos
+  searchInput.disabled = true;
+  searchInput.placeholder = 'Cargando productos...';
+
+  await loadProductos();
+
+  // Habilitar input después de cargar
+  searchInput.disabled = false;
+  searchInput.placeholder = 'Escriba codigo o nombre del producto...';
+
   setupEventListeners();
 });
 
