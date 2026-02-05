@@ -220,7 +220,7 @@ async function cargarReporte() {
       // Filtrar por familia si esta seleccionada
       if (familiaId) {
         movimientosConGanancia = movimientosConGanancia.filter(m =>
-          m.producto?.family === familiaId
+          m.producto?.familia === familiaId || m.producto?.familia?._id === familiaId
         );
       }
 

@@ -294,7 +294,7 @@ router.get('/', async (req, res) => {
     query.producto = { ...query.producto, $ne: null };
 
     const movements = await StockMovement.find(query)
-      .populate('producto', 'codigoInterno barcode name price unidad family')
+      .populate('producto', 'codigoInterno barcode name price unidad familia')
       .populate('usuario', 'username')
       .sort({ fecha: -1, comprobante: -1 })
       .limit(parseInt(limit));
