@@ -436,8 +436,10 @@ function actualizarEstadoPrecioVentaEdit() {
   const precioManualCheckbox = document.getElementById('editPrecioVentaManual');
 
   if (precioManualCheckbox.checked) {
+    precioVentaInput.disabled = false;
     precioVentaInput.style.backgroundColor = '';
   } else {
+    precioVentaInput.disabled = true;
     precioVentaInput.style.backgroundColor = '#f5f5f5';
     calcularPrecioVentaEdit();
   }

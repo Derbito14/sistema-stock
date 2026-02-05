@@ -69,7 +69,7 @@ function setupPrecioCalculation() {
       precioVentaInput.disabled = false;
       precioVentaInput.style.backgroundColor = '';
     } else {
-      precioVentaInput.disabled = false; // Lo dejamos editable pero se actualiza automáticamente
+      precioVentaInput.disabled = true;
       precioVentaInput.style.backgroundColor = '#f5f5f5';
       calcularPrecioVenta();
     }
