@@ -39,6 +39,7 @@ function setupLimpiarFiltros() {
     document.getElementById('filtroFechaHasta').value = '';
     document.getElementById('filtroCodigoInterno').value = '';
     document.getElementById('filtroNombreProducto').value = '';
+    document.getElementById('filtroMetodoPago').value = '';
     loadMovements();
   });
 }
@@ -64,12 +65,14 @@ async function loadMovements() {
     const fechaHasta = document.getElementById('filtroFechaHasta').value;
     const codigoInterno = document.getElementById('filtroCodigoInterno').value.trim();
     const nombreProducto = document.getElementById('filtroNombreProducto').value.trim();
+    const metodoPago = document.getElementById('filtroMetodoPago').value;
 
     if (tipo) params.append('tipo', tipo);
     if (fechaDesde) params.append('fechaDesde', fechaDesde);
     if (fechaHasta) params.append('fechaHasta', fechaHasta);
     if (codigoInterno) params.append('codigoInterno', codigoInterno);
     if (nombreProducto) params.append('nombreProducto', nombreProducto);
+    if (metodoPago) params.append('metodoPago', metodoPago);
 
     const response = await authenticatedFetch(`${API_URL}/stock-movements?${params.toString()}`);
     const data = await response.json();

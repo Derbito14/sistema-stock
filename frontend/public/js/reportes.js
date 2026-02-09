@@ -172,6 +172,7 @@ function limpiarFiltros() {
   document.getElementById('fechaDesde').value = formatDateForInput(hoy);
   document.getElementById('fechaHasta').value = formatDateForInput(hoy);
   document.getElementById('filtroFamilia').value = '';
+  document.getElementById('filtroMetodoPago').value = '';
 
   quitarProductoSeleccionado();
 
@@ -190,6 +191,7 @@ async function cargarReporte() {
   const fechaDesde = document.getElementById('fechaDesde').value;
   const fechaHasta = document.getElementById('fechaHasta').value;
   const familiaId = document.getElementById('filtroFamilia').value;
+  const metodoPago = document.getElementById('filtroMetodoPago').value;
 
   try {
     // Construir query params
@@ -197,6 +199,7 @@ async function cargarReporte() {
     params.append('tipo', 'EGRESO');
     if (fechaDesde) params.append('fechaDesde', fechaDesde);
     if (fechaHasta) params.append('fechaHasta', fechaHasta);
+    if (metodoPago) params.append('metodoPago', metodoPago);
     params.append('limit', '1000');
 
     const response = await authenticatedFetch(`${API_URL}/stock-movements?${params.toString()}`);

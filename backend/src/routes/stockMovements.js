@@ -227,13 +227,18 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { tipo, fechaDesde, fechaHasta, codigoInterno, nombreProducto, limit = 100 } = req.query;
+    const { tipo, fechaDesde, fechaHasta, codigoInterno, nombreProducto, metodoPago, limit = 100 } = req.query;
 
     const query = {};
 
     // Filtro por tipo
     if (tipo && ['INGRESO', 'EGRESO'].includes(tipo)) {
       query.tipo = tipo;
+    }
+
+    // Filtro por método de pago
+    if (metodoPago && ['EFECTIVO', 'DEBITO', 'TRANSFERENCIA'].includes(metodoPago)) {
+      query.metodoPago = metodoPago;
     }
 
     // Filtro por rango de fechas
