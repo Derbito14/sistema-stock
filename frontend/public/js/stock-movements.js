@@ -147,7 +147,7 @@ function renderMovements(movements) {
       <td><span class="badge tipo-${tipoClass}">${tipoFormatted}</span></td>
       <td class="text-center"><strong>${cantidadFormatted}</strong></td>
       <td class="text-right">${precioFormatted}</td>
-      <td>${escapeHtml(movement.comprobante)}</td>
+      <td>${escapeHtml(movement.comprobante)} <span class="btn-ver-comprobante" title="Ver comprobante" onclick="verComprobante('${escapeHtml(movement.comprobante)}')">📄</span></td>
       <td>${formatDate(movement.fecha)}</td>
       <td>${getUsuarioName(movement.usuario)}</td>
     `;
@@ -369,4 +369,93 @@ function exportToExcel() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+// Ver comprobante en modal
+async function verComprobante(comprobante) {
+  const modal = document.getElementById('comprobanteModal');
+  const body = document.getElementById('comprobanteModalBody');
+
+  // Mostrar modal con loading
+  body.innerHTML = '<div class="comprobante-loading">Cargando comprobante...</div>';
+  modal.classList.add('active');
+
+  try {
+    const response = await authenticatedFetch(`${API_URL}/stock-movements/by-comprobante/${encodeURIComponent(comprobante)}`);
+    const data = await response.json();
+
+    if (!data.success) {
+      body.innerHTML = `<div class="comprobante-loading">Error: ${escapeHtml(data.message || 'No se pudo cargar el comprobante')}</div>`;
+      return;
+    }
+
+    const tipoLabel = data.tipo === 'INGRESO' ? 'Ingreso' : 'Egreso';
+    const metodoPagoLabel = data.metodoPago || '-';
+
+    // Construir tabla de productos
+    let productosHTML = '';
+    let totalGeneral = 0;
+
+    data.productos.forEach(item => {
+      const codigo = item.producto?.codigoInterno || 'N/A';
+      const nombre = item.producto?.name || '(Producto eliminado)';
+      const precio = item.producto?.price || 0;
+      const unidad = item.producto?.unidad || 'unidad';
+      const cantidadDisplay = unidad === 'kg' ? `${Number(item.cantidad).toFixed(3)} kg` : item.cantidad;
+      const subtotal = precio * item.cantidad;
+      totalGeneral += subtotal;
+
+      const precioFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(precio);
+      const subtotalFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(subtotal);
+
+      productosHTML += `
+        <tr>
+          <td>${escapeHtml(codigo)}</td>
+          <td>${escapeHtml(nombre)}</td>
+          <td>${cantidadDisplay}</td>
+          <td>${precioFmt}</td>
+          <td>${subtotalFmt}</td>
+        </tr>
+      `;
+    });
+
+    const totalFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(totalGeneral);
+
+    body.innerHTML = `
+      <div class="comprobante-modal-header">
+        <h3>Comprobante ${escapeHtml(data.comprobante)}</h3>
+        <button class="comprobante-modal-close" onclick="cerrarComprobanteModal()">&times;</button>
+      </div>
+      <div class="comprobante-datos">
+        <div class="comprobante-dato"><strong>Tipo</strong> ${escapeHtml(tipoLabel)}</div>
+        <div class="comprobante-dato"><strong>Fecha</strong> ${formatDate(data.fecha)}</div>
+        <div class="comprobante-dato"><strong>Usuario</strong> ${escapeHtml(data.usuario?.username || 'Desconocido')}</div>
+        <div class="comprobante-dato"><strong>Método de Pago</strong> ${escapeHtml(metodoPagoLabel)}</div>
+        ${data.observacion ? `<div class="comprobante-dato" style="grid-column: 1 / -1;"><strong>Observación</strong> ${escapeHtml(data.observacion)}</div>` : ''}
+      </div>
+      <table class="comprobante-productos-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productosHTML}
+        </tbody>
+      </table>
+      <div class="comprobante-total">Total: ${totalFmt}</div>
+    `;
+  } catch (error) {
+    console.error('Error al cargar comprobante:', error);
+    body.innerHTML = '<div class="comprobante-loading">Error de conexión al cargar el comprobante</div>';
+  }
+}
+
+// Cerrar modal de comprobante
+function cerrarComprobanteModal() {
+  document.getElementById('comprobanteModal').classList.remove('active');
 }

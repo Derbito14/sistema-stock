@@ -349,6 +349,7 @@ router.get('/by-comprobante/:comprobante', async (req, res) => {
       fecha: movements[0].fecha,
       observacion: movements[0].observacion,
       usuario: movements[0].usuario,
+      metodoPago: movements[0].metodoPago || null,
       productos: movements.map(m => ({
         producto: m.producto,
         cantidad: m.cantidad
