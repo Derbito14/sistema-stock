@@ -624,12 +624,17 @@ async function guardarComprobante() {
       throw new Error('Error al generar comprobante');
     }
 
+    // Leer método de pago
+    const metodoPagoSelect = document.getElementById('metodoPago');
+    const metodoPago = metodoPagoSelect ? metodoPagoSelect.value : null;
+
     // Preparar payload
     const payload = {
       comprobante: comprobanteData.comprobante,
       tipo: tipoBackend,
       tipoOriginal: tipo, // Guardar el tipo original (AJUSTE_POSITIVO, etc.)
       observacion: observaciones || `${tipo} - ${fecha}`,
+      metodoPago,
       productos: lineasValidas.map(l => ({
         productoId: l.productoId,
         cantidad: l.cantidad,

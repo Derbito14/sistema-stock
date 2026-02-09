@@ -57,7 +57,7 @@ router.get('/next-comprobante', async (req, res) => {
 // @access  Private
 router.post('/', async (req, res) => {
   try {
-    const { comprobante, tipo, productos, observacion, tipoOriginal } = req.body;
+    const { comprobante, tipo, productos, observacion, tipoOriginal, metodoPago } = req.body;
 
     // Validar campos requeridos
     if (!comprobante || !tipo || !productos || !Array.isArray(productos) || productos.length === 0) {
@@ -132,6 +132,7 @@ router.post('/', async (req, res) => {
         observacion: observacion || '',
         usuario: req.user._id,
         precioCompra: tipo === 'INGRESO' ? item.precioCompra : null,
+        metodoPago: metodoPago || null,
         loteProcesado: false
       });
     }

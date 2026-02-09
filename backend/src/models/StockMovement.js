@@ -72,6 +72,11 @@ const stockMovementSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  metodoPago: {
+    type: String,
+    enum: ['EFECTIVO', 'DEBITO', 'TRANSFERENCIA'],
+    default: null
+  },
   loteProcesado: {
     type: Boolean,
     default: false

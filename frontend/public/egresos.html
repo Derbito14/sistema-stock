@@ -17,7 +17,7 @@
 
     .comprobante-header {
       display: grid;
-      grid-template-columns: 200px 180px 1fr;
+      grid-template-columns: 200px 180px 1fr 180px;
       gap: 16px;
       margin-bottom: 24px;
       padding-bottom: 16px;
@@ -379,6 +379,15 @@
                 placeholder="Ej: Cliente, remito, etc."
                 autocomplete="off"
               >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="metodoPago">Metodo de Pago *</label>
+              <select id="metodoPago" class="form-select" required>
+                <option value="EFECTIVO" selected>Efectivo</option>
+                <option value="DEBITO">Debito</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
             </div>
           </div>
 
