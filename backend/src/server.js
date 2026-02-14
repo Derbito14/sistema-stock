@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const stockMovementRoutes = require('./routes/stockMovements');
 const familyRoutes = require('./routes/families');
+const cashRoutes = require('./routes/cash');
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stock-movements', stockMovementRoutes);
 app.use('/api/families', familyRoutes);
+app.use('/api/cash', cashRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
