@@ -3,6 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
   loadFamilies();
   setupProductForm();
   setupPrecioCalculation();
+
+  // Ocultar costos/márgenes para VENDEDOR
+  if (window.userRole === 'VENDEDOR') {
+    const rowCosto = document.getElementById('rowCostoMargen');
+    if (rowCosto) rowCosto.style.display = 'none';
+  }
 });
 
 // Cargar familias en el select

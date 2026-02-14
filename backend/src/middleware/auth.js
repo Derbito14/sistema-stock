@@ -41,4 +41,11 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireMaster = (req, res, next) => {
+  if (req.user.role !== 'MASTER') {
+    return res.status(403).json({ success: false, message: 'Acceso denegado' });
+  }
+  next();
+};
+
+module.exports = { protect, requireMaster };

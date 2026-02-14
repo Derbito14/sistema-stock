@@ -1,10 +1,14 @@
 // Configuración global
 const API_URL = 'https://sistema-stock-l23q.onrender.com/api';
 
+// Rol del usuario actual
+window.userRole = null;
+
 // Verificar autenticación al cargar cualquier página
 document.addEventListener('DOMContentLoaded', async () => {
   await verifyAuth();
   setupLogoutButton();
+  applyRoleRestrictions();
 });
 
 // Verificar autenticación
@@ -40,6 +44,9 @@ async function verifyAuth() {
     const data = await response.json();
 
     if (data.success) {
+      // Guardar rol del usuario globalmente
+      window.userRole = data.user.role;
+
       // Mostrar información del usuario
       const usernameEl = document.getElementById('username');
       const userIconEl = document.getElementById('userIcon');
@@ -278,4 +285,32 @@ function showToast(icon, title) {
     timerProgressBar: true
   });
   return Toast.fire({ icon, title });
+}
+
+// ==================== Restricciones por Rol ====================
+
+function applyRoleRestrictions() {
+  if (window.userRole !== 'VENDEDOR') return;
+
+  // Ocultar link de Reportes en sidebar (todas las páginas)
+  document.querySelectorAll('a.sidebar-link[href="reportes.html"]').forEach(el => {
+    el.style.display = 'none';
+  });
+
+  // Ocultar quick-card de Reportes en dashboard
+  document.querySelectorAll('.quick-card[href="reportes.html"]').forEach(el => {
+    el.style.display = 'none';
+  });
+
+  // Remover opciones AC+ y AC- de selects de tipo movimiento
+  const tipoSelect = document.getElementById('tipoMovimiento');
+  if (tipoSelect) {
+    const optToRemove = tipoSelect.querySelector('option[value="AJUSTE_POSITIVO"]') ||
+                        tipoSelect.querySelector('option[value="AJUSTE_NEGATIVO"]');
+    if (optToRemove) optToRemove.remove();
+  }
+}
+
+function isVendedor() {
+  return window.userRole === 'VENDEDOR';
 }

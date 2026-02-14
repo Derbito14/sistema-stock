@@ -3,7 +3,7 @@ const StockMovement = require('../models/StockMovement');
 const Product = require('../models/Product');
 const BatchLot = require('../models/BatchLot');
 const SaleDetail = require('../models/SaleDetail');
-const { protect } = require('../middleware/auth');
+const { protect, requireMaster } = require('../middleware/auth');
 const { calculateStock } = require('../utils/stockCalculator');
 const LoteService = require('../services/LoteService');
 
@@ -72,6 +72,14 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'El tipo debe ser INGRESO o EGRESO'
+      });
+    }
+
+    // Bloquear ajustes de stock para VENDEDOR
+    if (req.user.role === 'VENDEDOR' && ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO'].includes(tipoOriginal)) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para realizar ajustes de stock'
       });
     }
 
@@ -306,7 +314,18 @@ router.get('/', async (req, res) => {
       .limit(parseInt(limit));
 
     // Filtrar movimientos donde el populate falló (producto eliminado)
-    const validMovements = movements.filter(m => m.producto !== null);
+    let validMovements = movements.filter(m => m.producto !== null);
+
+    // Stripear campos de costos/ganancias para VENDEDOR
+    if (req.user.role === 'VENDEDOR') {
+      validMovements = validMovements.map(m => {
+        const obj = m.toObject();
+        delete obj.gananciaTotal;
+        delete obj.costoTotalReal;
+        delete obj.precioVentaTotal;
+        return obj;
+      });
+    }
 
     res.json({
       success: true,
@@ -378,10 +397,21 @@ router.get('/lotes/:productoId', async (req, res) => {
     const estadisticas = await LoteService.getEstadisticasLotes(productoId);
 
     // Obtener lotes
-    const lotes = await LoteService.getLotesProducto(
+    let lotes = await LoteService.getLotesProducto(
       productoId,
       soloActivos === 'true'
     );
+
+    // Stripear campos de costos para VENDEDOR
+    if (req.user.role === 'VENDEDOR') {
+      delete estadisticas.costoPromedio;
+      delete estadisticas.valorEnStock;
+      lotes = lotes.map(l => {
+        const obj = l.toObject ? l.toObject() : { ...l };
+        delete obj.precioCompraUnitario;
+        return obj;
+      });
+    }
 
     res.json({
       success: true,
@@ -401,7 +431,7 @@ router.get('/lotes/:productoId', async (req, res) => {
 // @route   GET /api/stock-movements/detalles-venta/:movimientoId
 // @desc    Obtener detalles de venta de un movimiento de egreso
 // @access  Private
-router.get('/detalles-venta/:movimientoId', async (req, res) => {
+router.get('/detalles-venta/:movimientoId', requireMaster, async (req, res) => {
   try {
     const { movimientoId } = req.params;
 

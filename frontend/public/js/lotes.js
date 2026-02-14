@@ -185,12 +185,31 @@ function renderStats(stats) {
   document.getElementById('statValorStock').textContent = formatPrice(stats.valorEnStock);
   document.getElementById('statLotesActivos').textContent = stats.lotesActivos;
   document.getElementById('statPrecioVenta').textContent = formatPrice(stats.precioVentaActual);
+
+  // Ocultar stats de costo para VENDEDOR
+  if (window.userRole === 'VENDEDOR') {
+    const costoCard = document.getElementById('statCostoPromedio')?.closest('.stat-card');
+    const valorCard = document.getElementById('statValorStock')?.closest('.stat-card');
+    if (costoCard) costoCard.style.display = 'none';
+    if (valorCard) valorCard.style.display = 'none';
+  }
 }
 
 // Renderizar tabla de lotes
 function renderLotes(lotes) {
   const tbody = document.getElementById('lotesTableBody');
   tbody.innerHTML = '';
+
+  // Ocultar columnas de costos en el thead para VENDEDOR
+  if (window.userRole === 'VENDEDOR') {
+    const thead = tbody.closest('table')?.querySelector('thead tr');
+    if (thead) {
+      const ths = thead.querySelectorAll('th');
+      // Columnas 5 y 6 (0-indexed) = "Precio Compra" y "Valor Restante"
+      if (ths[5]) ths[5].style.display = 'none';
+      if (ths[6]) ths[6].style.display = 'none';
+    }
+  }
 
   // Encontrar el primer lote con stock (para indicador FIFO)
   const primerLoteConStock = lotes.find(l => l.cantidadRestante > 0);
@@ -218,6 +237,7 @@ function renderLotes(lotes) {
     // Estado
     const estadoClass = lote.estado === 'ACTIVO' ? 'activo' : 'agotado';
 
+    const isVendedor = window.userRole === 'VENDEDOR';
     row.innerHTML = `
       <td>
         ${esSiguiente ? '<span class="fifo-indicator next" title="Proximo en salir"></span>' : ''}
@@ -226,8 +246,8 @@ function renderLotes(lotes) {
       <td>${escapeHtml(comprobante)}</td>
       <td class="text-center">${formatStock(lote.cantidadInicial)}</td>
       <td class="text-center"><strong>${formatStock(lote.cantidadRestante)}</strong></td>
-      <td class="text-right">${formatPrice(lote.precioCompraUnitario)}</td>
-      <td class="text-right">${formatPrice(valorRestante)}</td>
+      ${!isVendedor ? `<td class="text-right">${formatPrice(lote.precioCompraUnitario)}</td>` : ''}
+      ${!isVendedor ? `<td class="text-right">${formatPrice(valorRestante)}</td>` : ''}
       <td class="text-center">
         <span class="badge-estado ${estadoClass}">${lote.estado}</span>
       </td>

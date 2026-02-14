@@ -6,6 +6,11 @@ let searchTimeout = null;
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', async () => {
+  // Bloquear acceso para VENDEDOR
+  if (window.userRole === 'VENDEDOR') {
+    window.location.href = 'dashboard.html';
+    return;
+  }
   // Establecer fecha por defecto (dia actual)
   const hoy = new Date();
   document.getElementById('fechaDesde').value = formatDateForInput(hoy);

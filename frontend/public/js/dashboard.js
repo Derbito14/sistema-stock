@@ -31,6 +31,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Mostrar información del usuario
       document.getElementById('username').textContent = data.user.username;
       document.getElementById('userIcon').textContent = data.user.username.charAt(0).toUpperCase();
+
+      // Aplicar restricciones de rol
+      if (data.user.role === 'VENDEDOR') {
+        // Ocultar link de Reportes en sidebar
+        document.querySelectorAll('a.sidebar-link[href="reportes.html"]').forEach(el => {
+          el.style.display = 'none';
+        });
+        // Ocultar quick-card de Reportes
+        document.querySelectorAll('.quick-card[href="reportes.html"]').forEach(el => {
+          el.style.display = 'none';
+        });
+      }
     } else {
       // Token inválido, redirigir al login
       logout();

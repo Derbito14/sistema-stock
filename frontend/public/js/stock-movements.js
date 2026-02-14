@@ -130,8 +130,8 @@ function renderMovements(movements) {
       currency: 'ARS'
     }).format(precio);
 
-    // Si es egreso y tiene ganancia calculada, mostrarla
-    if (movement.tipo === 'EGRESO' && movement.gananciaTotal !== null && movement.gananciaTotal !== undefined) {
+    // Si es egreso y tiene ganancia calculada, mostrarla (solo MASTER)
+    if (window.userRole !== 'VENDEDOR' && movement.tipo === 'EGRESO' && movement.gananciaTotal !== null && movement.gananciaTotal !== undefined) {
       const gananciaFormatted = new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency: 'ARS'

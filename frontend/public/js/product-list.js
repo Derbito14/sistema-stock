@@ -445,6 +445,14 @@ function actualizarEstadoPrecioVentaEdit() {
   }
 }
 
+// Ocultar costos en modal de edición para VENDEDOR
+function applyVendedorRestrictionsToEditModal() {
+  if (window.userRole === 'VENDEDOR') {
+    const row = document.getElementById('editRowCostoMargen');
+    if (row) row.style.display = 'none';
+  }
+}
+
 async function openEditModal(productId) {
   try {
     const response = await authenticatedFetch(`${API_URL}/products`);
@@ -461,6 +469,7 @@ async function openEditModal(productId) {
       if (product) {
         currentEditProduct = product;
         fillEditForm(product);
+        applyVendedorRestrictionsToEditModal();
         document.getElementById('editModal').style.display = 'flex';
       } else {
         showErrorAlert('Error', 'Producto no encontrado');
