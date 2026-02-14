@@ -4,9 +4,19 @@ let familiasCache = [];
 let productoSeleccionadoId = null;
 let searchTimeout = null;
 
+// Bloquear acceso para VENDEDOR inmediatamente
+(function() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('user'));
+    if (cached?.role === 'VENDEDOR') {
+      window.location.href = 'dashboard.html';
+    }
+  } catch(e) {}
+})();
+
 // Inicializar
 document.addEventListener('DOMContentLoaded', async () => {
-  // Bloquear acceso para VENDEDOR
+  // Doble check después de verificar con servidor
   if (window.userRole === 'VENDEDOR') {
     window.location.href = 'dashboard.html';
     return;

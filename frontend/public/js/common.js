@@ -1,14 +1,24 @@
 // Configuración global
 const API_URL = 'https://sistema-stock-l23q.onrender.com/api';
 
-// Rol del usuario actual
-window.userRole = null;
+// Rol del usuario actual - leer de localStorage inmediatamente para evitar flicker
+(function() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('user'));
+    window.userRole = cached?.role || null;
+  } catch(e) {
+    window.userRole = null;
+  }
+})();
 
 // Verificar autenticación al cargar cualquier página
 document.addEventListener('DOMContentLoaded', async () => {
-  await verifyAuth();
-  setupLogoutButton();
+  // Aplicar restricciones inmediatamente con rol cacheado
   applyRoleRestrictions();
+  await verifyAuth();
+  // Re-aplicar con rol confirmado del servidor
+  applyRoleRestrictions();
+  setupLogoutButton();
 });
 
 // Verificar autenticación

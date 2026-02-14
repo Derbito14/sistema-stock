@@ -1,5 +1,18 @@
 const API_URL = "https://sistema-stock-l23q.onrender.com/api";
 
+// Aplicar restricciones inmediatamente con datos cacheados
+(function() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('user'));
+    if (cached?.role === 'VENDEDOR') {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('a.sidebar-link[href="reportes.html"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.quick-card[href="reportes.html"]').forEach(el => el.style.display = 'none');
+      });
+    }
+  } catch(e) {}
+})();
+
 // Verificar autenticación al cargar
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('token');
@@ -10,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    // Verificar token con el backend
     const response = await fetch(`${API_URL}/auth/verify`, {
       method: 'GET',
       headers: {
@@ -18,7 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Verificar si la respuesta es OK (status 200-299)
     if (!response.ok) {
       console.error('Error en la verificación:', response.status, response.statusText);
       logout();
@@ -28,33 +39,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await response.json();
 
     if (data.success) {
-      // Mostrar información del usuario
       document.getElementById('username').textContent = data.user.username;
       document.getElementById('userIcon').textContent = data.user.username.charAt(0).toUpperCase();
 
-      // Aplicar restricciones de rol
+      // Aplicar restricciones de rol (confirmadas por servidor)
       if (data.user.role === 'VENDEDOR') {
-        // Ocultar link de Reportes en sidebar
-        document.querySelectorAll('a.sidebar-link[href="reportes.html"]').forEach(el => {
-          el.style.display = 'none';
-        });
-        // Ocultar quick-card de Reportes
-        document.querySelectorAll('.quick-card[href="reportes.html"]').forEach(el => {
-          el.style.display = 'none';
-        });
+        document.querySelectorAll('a.sidebar-link[href="reportes.html"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.quick-card[href="reportes.html"]').forEach(el => el.style.display = 'none');
       }
     } else {
-      // Token inválido, redirigir al login
       logout();
     }
   } catch (error) {
     console.error('Error completo al verificar token:', error);
-
-    // Mostrar mensaje más descriptivo en la consola
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
       console.error('No se pudo conectar al servidor backend en:', API_URL);
     }
-
     logout();
   }
 });
