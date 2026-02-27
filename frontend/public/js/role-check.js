@@ -9,14 +9,15 @@
       style.textContent = 'a.sidebar-link[href="reportes.html"], .quick-card[href="reportes.html"] { display: none !important; }';
       document.head.appendChild(style);
     }
-    // Registrar DOMContentLoaded temprano (antes que common.js) para inyectar username al instante
+    // Inyectar username via CSS ANTES de que el body se pinte (sin titileo)
     if (user.username) {
-      document.addEventListener('DOMContentLoaded', function() {
-        var el = document.getElementById('username');
-        var icon = document.getElementById('userIcon');
-        if (el) el.textContent = user.username;
-        if (icon) icon.textContent = user.username.charAt(0).toUpperCase();
-      });
+      var nameStyle = document.createElement('style');
+      nameStyle.id = 'cached-user-style';
+      var initial = user.username.charAt(0).toUpperCase();
+      var safeName = user.username.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      var safeInitial = initial.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      nameStyle.textContent = '#username:empty::after { content: "' + safeName + '"; } #userIcon:empty::after { content: "' + safeInitial + '"; }';
+      document.head.appendChild(nameStyle);
     }
   } catch(e) {}
 })();
