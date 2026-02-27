@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "create-admin": "node scripts/createAdmin.js",
+    "create-users": "node scripts/createUsers.js",
     "test-codigo": "node scripts/testCodigoInterno.js",
     "clean-orphan": "node scripts/cleanOrphanMovements.js"
   },
