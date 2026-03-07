@@ -22,7 +22,7 @@ body {
 }
 
 body.login-page {
-  background: #28a745;
+  background: #28a745 !important;
 }
 
 /* LOGIN STYLES */
