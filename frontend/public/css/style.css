@@ -21,10 +21,6 @@ body {
   justify-content: center;
 }
 
-body.login-page {
-  background: #28a745 !important;
-}
-
 /* LOGIN STYLES */
 .container {
   width: 100%;
